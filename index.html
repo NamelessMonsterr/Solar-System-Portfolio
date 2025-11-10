@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Interactive 3D Solar System Portfolio</title>
+
+  <!-- Three.js + examples (GLTFLoader, DRACOLoader, OrbitControls) -->
+  <!-- Using ES modules approach for Three.js r155+ -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    // Load Three.js and examples as ES modules
+    try {
+      console.log('[Three.js] Loading ES modules...');
+      const THREE = await import('three');
+      const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+      const { DRACOLoader } = await import('three/addons/loaders/DRACOLoader.js');
+      const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
+      
+      // Make them globally available for main.js
+      // THREE from ES modules is frozen, so we need to create a wrapper
+      window.THREE = Object.assign({}, THREE);
+      window.THREE.GLTFLoader = GLTFLoader;
+      window.THREE.DRACOLoader = DRACOLoader;
+      window.THREE.OrbitControls = OrbitControls;
+      
+      console.log('[Three.js] ✓ All ES modules loaded successfully');
+      console.log('[Three.js] ✓ THREE.WebGLRenderer:', !!THREE.WebGLRenderer);
+      console.log('[Three.js] ✓ THREE.GLTFLoader:', !!GLTFLoader);
+      
+      // Signal ready
+      window.THREE_READY = true;
+      window.dispatchEvent(new Event('threejs-ready'));
+    } catch(err) {
+      console.error('[Three.js] ✗ Error loading ES modules:', err);
+      window.THREE_LOAD_ERROR = err;
+      const loadingText = document.getElementById('loading-text');
+      if (loadingText) {
+        loadingText.textContent = 'Error: ' + err.message;
+        loadingText.style.color = '#fca5a5';
+      }
+    }
+  </script>
+
+  <style>
+    html,body { margin:0; height:100%; background:#05060a; overflow:hidden; font-family:Inter,Roboto,Arial,sans-serif; }
+    canvas { display:block; }
+
+    /* Loading */
+    #loading-overlay {
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:8px; background:rgba(4,6,10,0.9); color:#fff; z-index:2000;
+    }
+    #loading-overlay .bar { width:360px; height:10px; background:rgba(255,255,255,0.08); border-radius:999px; overflow:hidden; }
+    #loading-overlay .fill { height:100%; width:0%; background:linear-gradient(90deg,#6ee7b7,#60a5fa); transition:width 220ms ease; border-radius:999px; }
+    .loading-title { font-size:18px; font-weight:600; }
+    .loading-subtitle { opacity:0.9; font-size:13px; }
+
+    /* Panel & Editor base */
+    #planet-panel { position:absolute; right:20px; top:20px; max-width:420px; min-width:260px; padding:12px; background:rgba(10,10,14,0.92); color:#fff; border-radius:8px; z-index:1000; display:none;}
+    #project-open-editor { position:fixed; left:18px; bottom:18px; z-index:2500; padding:10px 14px; background:#06b6d4; color:#001; border-radius:10px; border:none; font-weight:600; cursor:pointer; }
+    /* small responsive */
+    @media (max-width:720px){
+      #loading-overlay .bar{ width:220px; } #planet-panel{ right:8px; left:8px; top:12px; }
+    }
+
+    /* Project editor */
+    #project-editor { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:3000; align-items:center; justify-content:center; padding:20px; }
+    .project-editor__modal { background:#071018; padding:18px; border-radius:10px; max-width:980px; width:100%; color:#fff; }
+    .project-editor__header { display:flex; justify-content:space-between; align-items:center; }
+    .project-editor__title { margin:0; }
+    .project-editor__actions { display:flex; align-items:center; gap:8px; }
+    .project-editor__body { margin-top:12px; display:flex; gap:12px; }
+    .project-editor__textarea { flex:1; height:420px; background:#0b1720; color:#dbeafe; padding:12px; border-radius:6px; border:1px solid rgba(255,255,255,0.04); font-family:monospace; font-size:13px; }
+    .project-editor__sidebar { width:280px; }
+    .project-editor__sidebar-label { margin-bottom:8px; }
+    #project-preview { background:#051018; padding:10px; border-radius:6px; height:360px; overflow:auto; color:#cbd5e1; font-size:13px; }
+    .project-editor__sidebar-actions { margin-top:8px; }
+    .project-editor__apply { width:100%; padding:8px; }
+    .project-editor__upload-input { display:none; }
+  </style>
+</head>
+<body>
+  <canvas id="glCanvas"></canvas>
+
+  <div id="loading-overlay" role="status" aria-live="polite">
+    <div class="loading-title">Loading Solar System…</div>
+    <div id="loading-text" class="loading-subtitle">Fetching assets</div>
+    <div class="bar"><div id="loading-fill" class="fill"></div></div>
+  </div>
+
+  <!-- Planet panel (populated by main.js) -->
+  <div id="planet-panel"></div>
+  
+  <!-- Control hint -->
+  <div id="control-hint" style="position:fixed;bottom:80px;left:20px;background:rgba(0,0,0,0.8);color:#fff;padding:12px 16px;border-radius:8px;font-size:13px;z-index:1500;opacity:0;transition:opacity 0.3s;pointer-events:none;max-width:300px;">
+    Press M for manual control
+  </div>
+  
+  <!-- Proximity indicator -->
+  <div id="proximity-indicator" style="position:fixed;top:20px;left:20px;z-index:1500;display:none;max-width:280px;"></div>
+
+  <!-- Project editor modal -->
+  <div id="project-editor">
+    <div class="project-editor__modal">
+      <div class="project-editor__header">
+        <h3 class="project-editor__title">Project Map Editor</h3>
+        <div class="project-editor__actions">
+          <button id="project-download">Download JSON</button>
+          <button id="project-upload-btn">Upload JSON</button>
+          <input id="project-upload" type="file" accept=".json" class="project-editor__upload-input">
+          <button id="project-close-editor">Close</button>
+        </div>
+      </div>
+      <div class="project-editor__body">
+        <textarea id="project-json" class="project-editor__textarea"></textarea>
+        <div class="project-editor__sidebar">
+          <div class="project-editor__sidebar-label">Preview</div>
+          <div id="project-preview"></div>
+          <div class="project-editor__sidebar-actions">
+            <button id="project-apply" class="project-editor__apply">Apply to page</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button id="project-open-editor">Edit Projects</button>
+
+  <script src="main.js"></script>
+</body>
+</html>

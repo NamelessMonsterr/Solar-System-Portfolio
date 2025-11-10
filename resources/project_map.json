@@ -1,0 +1,48 @@
+{
+    "Mercury": {
+      "title": "Mercury — Speedy Starter",
+      "short": "Small but mighty. The closest planet to the Sun.",
+      "long": "Mercury represents your first project — fast, lightweight, and powerful. Replace this text with your own description.",
+      "image": "https://placehold.co/600x400/111111/FFFFFF?text=Mercury",
+      "links": [
+        { "label": "GitHub", "url": "https://github.com/" }
+      ]
+    },
+    "Venus": {
+      "title": "Venus — Design Project",
+      "short": "Elegant and atmospheric. A showcase of your design work.",
+      "long": "Venus symbolizes your creative projects — beautifully designed, user-centered interfaces.",
+      "image": "https://placehold.co/600x400/222222/FFFFFF?text=Venus",
+      "links": [
+        { "label": "Live Demo", "url": "https://example.com" }
+      ]
+    },
+    "Earth": {
+      "title": "Earth — Portfolio Main Hub",
+      "short": "The centerpiece of your journey — your personal brand.",
+      "long": "Earth is your main portfolio section, connecting all your projects, achievements, and contact info.",
+      "image": "https://placehold.co/600x400/333333/FFFFFF?text=Earth",
+      "links": [
+        { "label": "Resume", "url": "#" }
+      ]
+    },
+    "Mars": {
+      "title": "Mars — Tech Project",
+      "short": "Ambitious and bold. Focused on exploration and innovation.",
+      "long": "Mars is your showcase for a bold technical project — maybe your first major experiment or prototype.",
+      "image": "https://placehold.co/600x400/444444/FFFFFF?text=Mars"
+    },
+    "Jupiter": {
+      "title": "Jupiter — Big Project",
+      "short": "Massive in scale, powerful in concept.",
+      "long": "Jupiter represents your largest and most complex project — something you’re truly proud of.",
+      "image": "https://placehold.co/600x400/555555/FFFFFF?text=Jupiter"
+    },
+    "Saturn": {
+      "title": "Saturn — Creative Project",
+      "short": "Beautiful rings and smooth experience.",
+      "long": "Saturn showcases your creativity — maybe a game, animation, or art-tech fusion.",
+      "image": "https://placehold.co/600x400/666666/FFFFFF?text=Saturn"
+    }
+  }
+  
