@@ -8,7 +8,6 @@
   <meta name="author" content="Your Name" />
   <title>Interactive 3D Solar System Portfolio</title>
 
-<<<<<<< Updated upstream
     <!-- Import Map - Resolves bare module specifiers -->
     <script type="importmap">
         {
@@ -32,10 +31,13 @@
       const { OrbitControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/OrbitControls.js');
       
       // Expose to global scope for all scripts (including modules)
-      window.THREE = THREE;
-      window.THREE.GLTFLoader = GLTFLoader;
-      window.THREE.DRACOLoader = DRACOLoader;
-      window.THREE.OrbitControls = OrbitControls;
+      // Create mutable object to avoid "object is not extensible" error
+            window.THREE = {
+                ...THREE,
+                GLTFLoader: GLTFLoader,
+                DRACOLoader: DRACOLoader,
+                OrbitControls: OrbitControls
+            };
       
       console.log('[Three.js] ✓ All modules loaded successfully');
       
