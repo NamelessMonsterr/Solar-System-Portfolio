@@ -1,8 +1,8 @@
-import { CONFIG } from '../utils/config.js';
 
 export class AnalyticsManager {
-  constructor() {
-    this.enabled = CONFIG.ANALYTICS.ENABLED;
+  constructor(config) {
+    this.config = config;
+    this.enabled = this.config.ANALYTICS.ENABLED;
     this.events = [];
     this.sessionStartTime = Date.now();
     this.visitedPlanets = new Set();
@@ -12,7 +12,7 @@ export class AnalyticsManager {
     if (!this.enabled) return;
 
     // Initialize Google Analytics if ID is provided
-    if (CONFIG.ANALYTICS.GA_ID) {
+    if (this.config.ANALYTICS.GA_ID) {
       this.initGoogleAnalytics();
     }
 
@@ -43,20 +43,20 @@ export class AnalyticsManager {
     // Load Google Analytics script
     const script = document.createElement('script');
     script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${CONFIG.ANALYTICS.GA_ID}`;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${this.config.ANALYTICS.GA_ID}`;
     document.head.appendChild(script);
 
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', CONFIG.ANALYTICS.GA_ID);
+    gtag('config', this.config.ANALYTICS.GA_ID);
 
     window.gtag = gtag;
   }
 
   trackEvent(eventName, data = {}) {
     if (!this.enabled) return;
-    if (!CONFIG.ANALYTICS.TRACK_EVENTS.includes(eventName)) return;
+    if (!this.config.ANALYTICS.TRACK_EVENTS.includes(eventName)) return;
 
     const event = {
       name: eventName,
@@ -70,7 +70,7 @@ export class AnalyticsManager {
     this.events.push(event);
 
     // Send to Google Analytics if available
-    if (window.gtag && CONFIG.ANALYTICS.GA_ID) {
+    if (window.gtag && this.config.ANALYTICS.GA_ID) {
       window.gtag('event', eventName, data);
     }
 

@@ -61,35 +61,16 @@ let CONFIG = {};
 
 // Load configuration from config.js
 async function loadConfig() {
-  try {
-    const response = await fetch('js/utils/config.js');
-    const configText = await response.text();
-    
-    // Extract CONFIG object from the file content
-    const configMatch = configText.match(/export\s+const\s+CONFIG\s*=\s*({[\s\S]*?});/);
-    if (configMatch) {
-      // Safely evaluate the config object
-      CONFIG = new Function('return ' + configMatch[1])();
-    } else {
-      // Fallback to default config
-      CONFIG = getDefaultConfig();
-    }
-    
-    // Update global variables with config values
-    spaceshipSpeed = CONFIG.SPACESHIP?.SPEED || 0.5;
-    spaceshipRotationSpeed = CONFIG.SPACESHIP?.ROTATION_SPEED || 0.02;
-    proximityThreshold = CONFIG.SPACESHIP?.PROXIMITY_THRESHOLD || 5;
-    mouseLookSensitivity = CONFIG.SPACESHIP?.MOUSE_SENSITIVITY || 0.002;
-    
-    console.log('[main.js] Configuration loaded:', CONFIG);
-  } catch (error) {
-    console.warn('[main.js] Failed to load config.js, using defaults:', error);
-    CONFIG = getDefaultConfig();
-    spaceshipSpeed = CONFIG.SPACESHIP.SPEED;
-    spaceshipRotationSpeed = CONFIG.SPACESHIP.ROTATION_SPEED;
-    proximityThreshold = CONFIG.SPACESHIP.PROXIMITY_THRESHOLD;
-    mouseLookSensitivity = CONFIG.SPACESHIP.MOUSE_SENSITIVITY;
-  }
+  // Use default config since we can't import modules dynamically in this context
+  CONFIG = getDefaultConfig();
+  
+  // Update global variables with config values
+  spaceshipSpeed = CONFIG.SPACESHIP.SPEED;
+  spaceshipRotationSpeed = CONFIG.SPACESHIP.ROTATION_SPEED;
+  proximityThreshold = CONFIG.SPACESHIP.PROXIMITY_THRESHOLD;
+  mouseLookSensitivity = CONFIG.SPACESHIP.MOUSE_SENSITIVITY;
+  
+  console.log('[main.js] Configuration loaded:', CONFIG);
 }
 
 /* ========= Planet Interaction Functions ========= */
