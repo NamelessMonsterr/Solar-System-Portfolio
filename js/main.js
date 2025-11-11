@@ -3,8 +3,8 @@
 
 /* ========= Global State ========= */
 const MODELS_PATH = 'resources/';
-const SOLAR_GLTF = 'solar_system_real_scale_2k_textures_draco.glb';
-const SPACESHIP_GLTF = 'spaceship_draco.glb';
+const SOLAR_GLTF = 'solar_system_real_scale_2k_textures.glb';
+const SPACESHIP_GLTF = 'spaceship.glb';
 
 let scene, camera, renderer, clock, controls;
 let raycaster, mouse;
