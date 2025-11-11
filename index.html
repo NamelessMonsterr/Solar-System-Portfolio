@@ -8,6 +8,17 @@
   <meta name="author" content="Your Name" />
   <title>Interactive 3D Solar System Portfolio</title>
 
+    <!-- Import Map - Resolves bare module specifiers -->
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js",
+            "three/": "https://cdn.jsdelivr.net/npm/three@0.155.0/",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/"
+          }
+        }
+        </script>
+
   <!-- Three.js Loader - Direct module loading for maximum compatibility -->
   <script type="module">
     try {
