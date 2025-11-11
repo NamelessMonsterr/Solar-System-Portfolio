@@ -1,0 +1,83 @@
+{
+  "Mercury": {
+    "title": "Mercury",
+    "short": "The smallest and fastest planet, closest to the Sun with extreme temperatures.",
+    "long": "Mercury is the smallest planet in our Solar System and has the most eccentric orbit. Despite being closest to the Sun, it's not the hottest planet due to its lack of atmosphere. Surface temperatures can vary dramatically from -173°C at night to 427°C during the day.",
+    "projects": [
+      {
+        "name": "Sample Project 1",
+        "description": "Add your project description here",
+        "tech": "Technologies used",
+        "link": "https://github.com/yourusername/project"
+      }
+    ],
+    "contact": {
+      "email": "your@email.com"
+    },
+    "links": []
+  },
+  "Venus": {
+    "title": "Venus",
+    "short": "The hottest planet with a thick toxic atmosphere and retrograde rotation.",
+    "long": "Venus has the densest atmosphere of all terrestrial planets, consisting primarily of carbon dioxide with clouds of sulfuric acid. Its surface pressure is 92 times that of Earth. It rotates backwards compared to most planets in our solar system."
+  },
+  "Earth": {
+    "title": "About Me",
+    "short": "Welcome to my interactive 3D portfolio! Explore the solar system to discover my projects and skills.",
+    "long": "I'm a developer passionate about creating immersive web experiences using cutting-edge technologies like Three.js, WebGL, and spatial audio. This portfolio showcases my work in an innovative way - fly through space to explore my projects!",
+    "projects": [
+      {
+        "name": "Solar System Portfolio",
+        "description": "Interactive 3D portfolio with spatial audio and advanced features",
+        "tech": "Three.js, WebGL, Web Audio API, JavaScript ES6+",
+        "link": "https://github.com/yourusername/portfolio"
+      },
+      {
+        "name": "Project 2",
+        "description": "Your second project description",
+        "tech": "React, Node.js, MongoDB",
+        "link": "https://github.com/yourusername/project2"
+      }
+    ],
+    "contact": {
+      "email": "your@email.com",
+      "phone": "+1234567890",
+      "location": "Your City, Country"
+    },
+    "links": [
+      {"label": "GitHub", "url": "https://github.com/yourusername"},
+      {"label": "LinkedIn", "url": "https://linkedin.com/in/yourusername"},
+      {"label": "Twitter", "url": "https://twitter.com/yourusername"}
+    ]
+  },
+  "Mars": {
+    "title": "Mars",
+    "short": "The Red Planet with the largest volcano and canyon in the Solar System.",
+    "long": "Mars has evidence of ancient water flows and could have supported microbial life. Current missions are searching for signs of past life and preparing for future human exploration."
+  },
+  "Jupiter": {
+    "title": "Jupiter",
+    "short": "The largest planet with 95 moons and a Great Red Spot storm.",
+    "long": "Jupiter is a gas giant composed primarily of hydrogen and helium. Its iconic Great Red Spot is a giant storm that has been raging for at least 350 years and is larger than Earth."
+  },
+  "Saturn": {
+    "title": "Saturn",
+    "short": "Famous for its spectacular ring system and 146 confirmed moons.",
+    "long": "Saturn's rings are made of billions of particles of ice and rock, ranging in size from grains of sand to mountain-sized chunks. The planet has the lowest density of all planets - it would float in water!"
+  },
+  "Uranus": {
+    "title": "Uranus",
+    "short": "An ice giant that rotates on its side with 27 known moons.",
+    "long": "Uranus has the coldest planetary atmosphere in the Solar System with temperatures as low as -224°C. Its unusual axial tilt of 98 degrees means it essentially orbits the Sun on its side."
+  },
+  "Neptune": {
+    "title": "Neptune",
+    "short": "The windiest planet with supersonic storms and a Great Dark Spot.",
+    "long": "Neptune has the strongest winds in the Solar System, reaching speeds of 2,100 km/h. It was the first planet discovered through mathematical predictions rather than direct observation."
+  },
+  "Pluto": {
+    "title": "Pluto",
+    "short": "A dwarf planet in the Kuiper Belt with a heart-shaped region.",
+    "long": "Though reclassified as a dwarf planet in 2006, Pluto remains fascinating. NASA's New Horizons mission revealed a geologically active world with nitrogen ice plains and water-ice mountains."
+  }
+}

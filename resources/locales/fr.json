@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "title": "Portfolio Interactif du Système Solaire 3D",
+    "description": "Explorez le système solaire et découvrez mes projets"
+  },
+  "controls": {
+    "title": "Contrôles Simples",
+    "wasd": "Déplacer",
+    "drag": "Regarder Autour",
+    "space": "Monter / Interagir (près de la planète)",
+    "shift": "Descendre",
+    "click": "Voir les Informations"
+  },
+  "ui": {
+    "gameMode": "Mode Jeu",
+    "orbitMode": "Mode Orbite",
+    "loading": "Chargement du Système Solaire…",
+    "editProjects": "Modifier les Projets",
+    "startTour": "Démarrer la Visite Guidée",
+    "close": "Fermer",
+    "travelHere": "Voyager Ici",
+    "tabs": {
+      "info": "Informations Utilisateur",
+      "projects": "Projets",
+      "contact": "Contact"
+    }
+  },
+  "tour": {
+    "welcome": "Bienvenue dans la visite guidée ! Nous allons explorer toutes les planètes du système solaire.",
+    "complete": "Visite terminée ! Vous avez exploré toutes les planètes du système solaire."
+  },
+  "chatbot": {
+    "title": "Guide IA Spatial",
+    "placeholder": "Posez des questions sur les planètes ou les projets...",
+    "welcome": "Bonjour ! Je suis votre Guide IA Spatial. Posez-moi des questions sur les planètes de notre système solaire ou les projets présentés ici !"
+  },
+  "shipSelector": {
+    "title": "Sélectionner un Vaisseau"
+  },
+  "planets": {
+    "Mercury": "Mercure",
+    "Venus": "Vénus",
+    "Earth": "Terre",
+    "Mars": "Mars",
+    "Jupiter": "Jupiter",
+    "Saturn": "Saturne",
+    "Uranus": "Uranus",
+    "Neptune": "Neptune",
+    "Pluto": "Pluton"
+  }
+}

@@ -1,0 +1,291 @@
+/* Theme Styles - Portfolio v2.0 */
+
+/* Default Dark Theme (already applied) */
+body {
+  --theme-bg: #05060a;
+  --theme-text: #ffffff;
+  --theme-primary: #06b6d4;
+}
+
+/* Light Theme */
+body.theme-light {
+  --theme-bg: #f0f4f8;
+  --theme-text: #1a202c;
+  --theme-primary: #0891b2;
+  
+  background: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+body.theme-light canvas {
+  filter: brightness(1.2) contrast(0.9);
+}
+
+body.theme-light .glass {
+  background: rgba(0, 0, 0, 0.05);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+body.theme-light #planet-panel,
+body.theme-light #planet-overlay {
+  background: rgba(240, 244, 248, 0.95);
+  color: var(--theme-text);
+}
+
+/* Space Theme (Enhanced Dark) */
+body.theme-space {
+  --theme-bg: #000000;
+  --theme-text: #e0e0e0;
+  --theme-primary: #00d4ff;
+  background: radial-gradient(ellipse at center, #001a33 0%, #000000 100%);
+}
+
+body.theme-space .glass {
+  background: rgba(0, 212, 255, 0.05);
+  border-color: rgba(0, 212, 255, 0.2);
+}
+
+/* Cyberpunk Theme */
+body.theme-cyberpunk {
+  --theme-bg: #0a0e27;
+  --theme-text: #f0f0f0;
+  --theme-primary: #ff006e;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 100%);
+}
+
+body.theme-cyberpunk .glass {
+  background: rgba(255, 0, 110, 0.1);
+  border-color: rgba(255, 0, 110, 0.3);
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.2);
+}
+
+body.theme-cyberpunk button {
+  background: linear-gradient(135deg, #ff006e, #8338ec);
+}
+
+body.theme-cyberpunk #control-mode-text {
+  color: #ff006e !important;
+}
+
+/* Neon Theme */
+body.theme-neon {
+  --theme-bg: #0d0221;
+  --theme-text: #ffffff;
+  --theme-primary: #00ff00;
+  background: #0d0221;
+}
+
+body.theme-neon .glass {
+  background: rgba(0, 255, 0, 0.05);
+  border-color: rgba(0, 255, 0, 0.3);
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+}
+
+body.theme-neon button {
+  background: #00ff00;
+  color: #000;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+}
+
+body.theme-neon h1,
+body.theme-neon h2,
+body.theme-neon h3 {
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+/* Retro Theme */
+body.theme-retro {
+  --theme-bg: #1a1a1a;
+  --theme-text: #00ff00;
+  --theme-primary: #00ff00;
+  font-family: 'Courier New', monospace;
+}
+
+body.theme-retro canvas {
+  filter: sepia(0.3) contrast(1.2);
+}
+
+body.theme-retro .glass {
+  background: rgba(0, 255, 0, 0.05);
+  border: 2px dashed #00ff00;
+}
+
+body.theme-retro button {
+  background: none;
+  border: 2px solid #00ff00;
+  color: #00ff00;
+}
+
+/* Minimal Theme */
+body.theme-minimal {
+  --theme-bg: #ffffff;
+  --theme-text: #000000;
+  --theme-primary: #000000;
+  background: #ffffff;
+  color: #000000;
+}
+
+body.theme-minimal canvas {
+  filter: grayscale(0.5) contrast(1.1);
+}
+
+body.theme-minimal .glass {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+body.theme-minimal button {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Ocean Theme */
+body.theme-ocean {
+  --theme-bg: #001f3f;
+  --theme-text: #e0f4ff;
+  --theme-primary: #00b4d8;
+  background: linear-gradient(180deg, #001f3f 0%, #003d5c 100%);
+}
+
+body.theme-ocean .glass {
+  background: rgba(0, 180, 216, 0.1);
+  border-color: rgba(0, 180, 216, 0.3);
+}
+
+/* Sunset Theme */
+body.theme-sunset {
+  --theme-bg: #1a0b2e;
+  --theme-text: #ffd6a5;
+  --theme-primary: #ff6b9d;
+  background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 50%, #4a2c6f 100%);
+}
+
+body.theme-sunset .glass {
+  background: rgba(255, 107, 157, 0.1);
+  border-color: rgba(255, 107, 157, 0.3);
+}
+
+body.theme-sunset button {
+  background: linear-gradient(135deg, #ff6b9d, #c9ada7);
+}
+
+/* Matrix Theme */
+body.theme-matrix {
+  --theme-bg: #000000;
+  --theme-text: #00ff41;
+  --theme-primary: #00ff41;
+  font-family: 'Courier New', monospace;
+  background: #000000;
+}
+
+body.theme-matrix .glass {
+  background: rgba(0, 255, 65, 0.03);
+  border-color: rgba(0, 255, 65, 0.2);
+}
+
+body.theme-matrix button {
+  background: none;
+  border: 1px solid #00ff41;
+  color: #00ff41;
+}
+
+body.theme-matrix * {
+  text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+}
+
+/* Theme Selector UI */
+.theme-selector {
+  position: fixed;
+  top: 200px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 15px;
+  border-radius: 10px;
+  border: 2px solid var(--theme-primary);
+  z-index: 1500;
+  display: none;
+}
+
+.theme-selector.active {
+  display: block;
+}
+
+.theme-option {
+  padding: 8px 12px;
+  margin: 5px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+}
+
+.theme-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-option.selected {
+  background: var(--theme-primary);
+  color: #000;
+  font-weight: 600;
+}
+
+/* Theme toggle button */
+#theme-toggle {
+  position: fixed;
+  top: 200px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(6, 182, 212, 0.8);
+  border: 2px solid #06b6d4;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+#theme-toggle:hover {
+  transform: scale(1.1);
+}
+
+/* Auto theme based on system preference */
+@media (prefers-color-scheme: dark) {
+  body.theme-auto {
+    /* Dark theme variables (default) */
+    --theme-bg: #05060a;
+    --theme-text: #ffffff;
+    --theme-primary: #06b6d4;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  body.theme-auto {
+    /* Light theme variables */
+    --theme-bg: #f0f4f8;
+    --theme-text: #1a202c;
+    --theme-primary: #0891b2;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+  }
+  
+  body.theme-auto canvas {
+    filter: brightness(1.2) contrast(0.9);
+  }
+  
+  body.theme-auto .glass {
+    background: rgba(0, 0, 0, 0.05);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+  
+  body.theme-auto #planet-panel,
+  body.theme-auto #planet-overlay {
+    background: rgba(240, 244, 248, 0.95);
+    color: var(--theme-text);
+  }
+}

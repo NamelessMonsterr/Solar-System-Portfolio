@@ -1,0 +1,2 @@
+# Enable Gzip compression for GLB files
+AddOutputFilterByType DEFLATE application/octet-stream

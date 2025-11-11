@@ -1,0 +1,38 @@
+{
+  "name": "solar-system-portfolio",
+  "version": "2.0.0",
+  "description": "Interactive 3D Solar System Portfolio with spatial audio and advanced features",
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "serve": "npx serve .",
+    "test": "echo \"Open http://localhost:8000 and check browser console\"",
+    "deploy:netlify": "netlify deploy --prod",
+    "deploy:vercel": "vercel --prod"
+  },
+  "keywords": [
+    "portfolio",
+    "3d",
+    "threejs",
+    "solar-system",
+    "interactive",
+    "webgl",
+    "spatial-audio",
+    "game"
+  ],
+  "author": "NamelessMonsterr",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NamelessMonsterr/Portfolio-Website.git"
+  },
+  "dependencies": {
+    "three": "^0.181.1"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

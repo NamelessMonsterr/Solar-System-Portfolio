@@ -1,0 +1,261 @@
+/* Mobile Styles - Portfolio v2.0 */
+
+/* Mobile Breakpoints */
+@media (max-width: 1024px) {
+  /* Tablet adjustments */
+  #planet-panel {
+    max-width: 90%;
+  }
+  
+  #control-hint {
+    font-size: 11px;
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile landscape */
+  body {
+    font-size: 14px;
+  }
+  
+  h1 { font-size: 32px; }
+  h2 { font-size: 24px; }
+  h3 { font-size: 20px; }
+  
+  #planet-panel {
+    right: 8px;
+    left: 8px;
+    top: 12px;
+    max-width: none;
+    font-size: 13px;
+  }
+  
+  #planet-overlay-content {
+    padding: 20px;
+  }
+  
+  #planet-overlay-content h1 {
+    font-size: 28px !important;
+  }
+  
+  #planet-overlay-content h2 {
+    font-size: 20px !important;
+  }
+  
+  #control-hint {
+    bottom: 140px;
+    left: 8px;
+    right: 8px;
+    max-width: none;
+  }
+  
+  #control-status {
+    bottom: 8px;
+    left: 8px;
+    font-size: 10px;
+  }
+  
+  #project-open-editor {
+    left: 8px;
+    bottom: 8px;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  
+  /* Hide desktop-only elements */
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Mobile portrait */
+  body {
+    font-size: 13px;
+  }
+  
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+  
+  #loading-overlay .bar {
+    width: 220px;
+  }
+  
+  #planet-overlay-content {
+    padding: 15px;
+  }
+  
+  #planet-overlay-content h1 {
+    font-size: 24px !important;
+  }
+  
+  #planet-overlay-close {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+  
+  button {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  input,
+  textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Mobile controller adjustments */
+  .dpad-container {
+    width: 110px;
+    height: 110px;
+    left: -160px;
+  }
+  
+  .dpad-stick {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .action-buttons {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .action-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 14px;
+  }
+  
+  .center-interact-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .rotate-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 16px;
+  }
+  
+  .rotate-btn.btn-rotate-left {
+    left: -150px;
+    bottom: 120px;
+  }
+  
+  .rotate-btn.btn-rotate-right {
+    right: 120px;
+    bottom: 120px;
+  }
+}
+
+/* Touch-specific styles */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch target sizes */
+  button,
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Remove hover effects */
+  button:hover,
+  a:hover {
+    transform: none;
+  }
+  
+  /* Add tap highlight */
+  * {
+    -webkit-tap-highlight-color: rgba(6, 182, 212, 0.3);
+  }
+}
+
+/* Landscape orientation */
+@media (max-width: 896px) and (orientation: landscape) {
+  #control-hint {
+    bottom: 60px;
+    font-size: 10px;
+  }
+  
+  #planet-panel {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  .dpad-container {
+    bottom: 10px;
+  }
+  
+  .action-buttons {
+    bottom: 10px;
+  }
+  
+  .rotate-btn {
+    bottom: 80px !important;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+  body {
+    font-size: 12px;
+  }
+  
+  h1 { font-size: 20px; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 16px; }
+  
+  .dpad-container {
+    width: 100px;
+    height: 100px;
+    left: -140px;
+  }
+  
+  .action-buttons {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .action-btn {
+    width: 42px;
+    height: 42px;
+  }
+}
+
+/* iOS Safe Area */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+  
+  #mobile-controller {
+    bottom: max(20px, env(safe-area-inset-bottom));
+    right: max(20px, env(safe-area-inset-right));
+  }
+  
+  #control-status {
+    bottom: max(20px, env(safe-area-inset-bottom));
+    left: max(20px, env(safe-area-inset-left));
+  }
+}
+
+/* Performance optimizations for mobile */
+@media (max-width: 768px) {
+  /* Disable heavy animations */
+  .reduce-animations * {
+    animation-duration: 0.2s !important;
+  }
+  
+  /* Simplify shadows */
+  .card,
+  button,
+  #planet-panel {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+}

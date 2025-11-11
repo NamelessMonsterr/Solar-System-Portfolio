@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Interactive 3D Solar System Portfolio - Explore the universe and discover my projects" />
+  <meta name="keywords" content="portfolio, 3D, solar system, interactive, web development, Three.js" />
+  <meta name="author" content="Your Name" />
+  <title>Interactive 3D Solar System Portfolio</title>
+
+  <!-- Three.js Loader - Direct module loading for maximum compatibility -->
+  <script type="module">
+    try {
+      console.log('[Three.js] Loading modules directly...');
+      
+      // Direct imports using full URLs for maximum compatibility
+      const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js');
+      const { GLTFLoader } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/GLTFLoader.js');
+      const { DRACOLoader } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/DRACOLoader.js');
+      const { OrbitControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/OrbitControls.js');
+      
+      // Expose to global scope for all scripts (including modules)
+      window.THREE = THREE;
+      window.THREE.GLTFLoader = GLTFLoader;
+      window.THREE.DRACOLoader = DRACOLoader;
+      window.THREE.OrbitControls = OrbitControls;
+      
+      console.log('[Three.js] ✓ All modules loaded successfully');
+      
+      window.THREE_READY = true;
+      window.dispatchEvent(new Event('threejs-ready'));
+    } catch(err) {
+      console.error('[Three.js] ✗ Error loading modules:', err);
+      window.THREE_LOAD_ERROR = err;
+      const loadingText = document.getElementById('loading-text');
+      if (loadingText) {
+        loadingText.textContent = 'Error: ' + err.message;
+        loadingText.style.color = '#fca5a5';
+      }
+    }
+  </script>
+
+  <style>
+    html,body { 
+      margin:0; 
+      height:100%; 
+      background:#05060a; 
+      overflow:hidden; 
+      font-family:'Segoe UI',Inter,Roboto,Arial,sans-serif; 
+    }
+    canvas { display:block; }
+
+    /* Loading */
+    #loading-overlay {
+      position:fixed; 
+      inset:0; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center;
+      flex-direction:column; 
+      gap:8px; 
+      background:rgba(4,6,10,0.9); 
+      color:#fff; 
+      z-index:2000;
+    }
+    #loading-overlay .bar { 
+      width:360px; 
+      height:10px; 
+      background:rgba(255,255,255,0.08); 
+      border-radius:999px; 
+      overflow:hidden; 
+    }
+    #loading-overlay .fill { 
+      height:100%; 
+      width:0%; 
+      background:linear-gradient(90deg,#6ee7b7,#60a5fa); 
+      transition:width 220ms ease; 
+      border-radius:999px; 
+    }
+    .loading-title { 
+      font-size:18px; 
+      font-weight:600; 
+    }
+    .loading-subtitle { 
+      opacity:0.9; 
+      font-size:13px; 
+    }
+
+    /* Panel & Editor base */
+    #planet-panel { 
+      position:absolute; 
+      right:20px; 
+      top:20px; 
+      max-width:420px; 
+      min-width:260px; 
+      padding:12px; 
+      background:rgba(10,10,14,0.92); 
+      color:#fff; 
+      border-radius:8px; 
+      z-index:1000; 
+      display:none;
+    }
+    
+    /* Full-screen planet overlay */
+    #planet-overlay { 
+      position:fixed; 
+      inset:0; 
+      z-index:2000; 
+      display:none; 
+      background:rgba(5,6,10,0.95); 
+      -webkit-backdrop-filter:blur(10px);
+      backdrop-filter:blur(10px);
+    }
+    #planet-overlay.active { 
+      display:flex; 
+      flex-direction:column; 
+    }
+    #planet-overlay-bg { 
+      position:absolute; 
+      inset:0; 
+      opacity:0.4; 
+      background-size:cover; 
+      background-position:center; 
+      background-repeat:no-repeat; 
+      filter:blur(15px) brightness(0.7);
+      -webkit-animation:planetPulse 5s ease-in-out infinite;
+      animation:planetPulse 5s ease-in-out infinite;
+    }
+    @-webkit-keyframes planetPulse {
+      0%, 100% { opacity:0.4; -webkit-transform:scale(1); transform:scale(1); }
+      50% { opacity:0.5; -webkit-transform:scale(1.01); transform:scale(1.01); }
+    }
+    @keyframes planetPulse {
+      0%, 100% { opacity:0.4; transform:scale(1); }
+      50% { opacity:0.5; transform:scale(1.01); }
+    }
+    #planet-overlay-content { 
+      position:relative; 
+      z-index:1; 
+      flex:1; 
+      display:flex; 
+      flex-direction:column;
+      padding:40px; 
+      max-width:900px; 
+      margin:0 auto; 
+      width:100%; 
+      overflow-y:auto;
+    }
+    #planet-overlay-close { 
+      position:absolute; 
+      top:20px; 
+      right:20px; 
+      z-index:2; 
+      background:rgba(255,255,255,0.1); 
+      border:none; 
+      color:#fff; 
+      font-size:24px; 
+      width:40px; 
+      height:40px; 
+      border-radius:50%; 
+      cursor:pointer; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center;
+      transition:background 0.2s;
+    }
+    #planet-overlay-close:hover { 
+      background:rgba(255,255,255,0.2); 
+    }
+    
+    #project-open-editor { 
+      position:fixed; 
+      left:18px; 
+      bottom:18px; 
+      z-index:1500; 
+      padding:10px 14px; 
+      background:#06b6d4; 
+      color:#001; 
+      border-radius:10px; 
+      border:none; 
+      font-weight:600; 
+      cursor:pointer; 
+    }
+    
+    /* Control hint styles */
+    #control-hint {
+      position:fixed; 
+      bottom:80px; 
+      left:20px; 
+      background:rgba(0,0,0,0.85); 
+      color:#fff;
+      padding:12px 16px; 
+      border-radius:8px; 
+      font-size:12px; 
+      z-index:1500; 
+      opacity:1;
+      transition:opacity 0.3s; 
+      pointer-events:none; 
+      max-width:280px;
+      border:1px solid rgba(6,182,212,0.3); 
+      box-shadow:0 4px 12px rgba(0,0,0,0.5);
+    }
+    .control-hint-title {
+      font-weight:600; 
+      margin-bottom:8px; 
+      color:#06b6d4; 
+      font-size:13px;
+    }
+    .control-hint-content {
+      font-size:11px; 
+      line-height:1.8; 
+      color:#ddd;
+    }
+    
+    /* Control status styles */
+    #control-status {
+      position:fixed; 
+      bottom:20px; 
+      left:20px; 
+      background:rgba(0,0,0,0.8); 
+      color:#fff;
+      padding:8px 12px; 
+      border-radius:6px; 
+      font-size:11px; 
+      z-index:1500;
+      border:1px solid rgba(0,255,0,0.3);
+    }
+    #control-mode-text {
+      color:#00ff00; 
+      font-weight:600;
+    }
+    
+    /* Proximity indicator styles */
+    #proximity-indicator {
+      position:fixed; 
+      top:20px; 
+      left:20px; 
+      z-index:1500; 
+      display:none; 
+      max-width:280px;
+    }
+
+    /* ========== MOBILE CONTROLLER STYLES ========== */
+    #mobile-controller {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1600;
+      display: none;
+      pointer-events: none;
+    }
+
+    @media (max-width: 1024px) and (hover: none) and (pointer: coarse) {
+      #mobile-controller {
+        display: block;
+      }
+    }
+
+    .controller-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* D-Pad / Joystick */
+    .dpad-container {
+      position: absolute;
+      bottom: 0;
+      left: -200px;
+      width: 140px;
+      height: 140px;
+      pointer-events: auto;
+    }
+
+    .dpad-base {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: rgba(6, 182, 212, 0.15);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(6, 182, 212, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
+                  inset 0 2px 10px rgba(6, 182, 212, 0.1);
+    }
+
+    .dpad-stick {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.6), rgba(6, 182, 212, 0.4));
+      -webkit-backdrop-filter: blur(5px);
+      backdrop-filter: blur(5px);
+      border: 2px solid rgba(6, 182, 212, 0.6);
+      box-shadow: 0 2px 10px rgba(6, 182, 212, 0.5),
+                  inset 0 1px 3px rgba(255, 255, 255, 0.3);
+      top: 50%;
+      left: 50%;
+      -webkit-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+      transition: all 0.1s ease-out;
+    }
+
+    .dpad-stick.active {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(6, 182, 212, 0.7));
+      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.8),
+                  inset 0 1px 3px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 180px;
+      height: 180px;
+      pointer-events: auto;
+    }
+
+    .action-btn {
+      position: absolute;
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      background: rgba(6, 182, 212, 0.15);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(6, 182, 212, 0.4);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3),
+                  inset 0 2px 8px rgba(6, 182, 212, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: rgba(6, 182, 212, 0.9);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .action-btn:active,
+    .action-btn.pressed {
+      background: rgba(6, 182, 212, 0.4);
+      border-color: rgba(6, 182, 212, 0.8);
+      box-shadow: 0 2px 8px rgba(6, 182, 212, 0.6),
+                  inset 0 1px 5px rgba(255, 255, 255, 0.3);
+      -webkit-transform: scale(0.95);
+      transform: scale(0.95);
+    }
+
+    /* Button positions */
+    .action-btn.btn-up { top: 0; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); }
+    .action-btn.btn-right { top: 50%; right: 0; -webkit-transform: translateY(-50%); transform: translateY(-50%); }
+    .action-btn.btn-down { bottom: 0; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); }
+    .action-btn.btn-left { top: 50%; left: 0; -webkit-transform: translateY(-50%); transform: translateY(-50%); }
+
+    .action-btn::before {
+      content: attr(data-key);
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.9);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Center interact button */
+    .center-interact-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      -webkit-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: rgba(0, 255, 0, 0.2);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(0, 255, 0, 0.5);
+      box-shadow: 0 4px 15px rgba(0, 255, 0, 0.4),
+                  inset 0 2px 8px rgba(0, 255, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(0, 255, 0, 0.9);
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: all 0.15s ease;
+    }
+
+    .center-interact-btn:active {
+      background: rgba(0, 255, 0, 0.4);
+      border-color: rgba(0, 255, 0, 0.8);
+      box-shadow: 0 2px 10px rgba(0, 255, 0, 0.7);
+      -webkit-transform: translate(-50%, -50%) scale(0.92);
+      transform: translate(-50%, -50%) scale(0.92);
+    }
+
+    .center-interact-btn::before {
+      content: '↕';
+      font-size: 24px;
+      color: rgba(255, 255, 255, 0.95);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Rotation buttons */
+    .rotate-btn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(147, 51, 234, 0.15);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(147, 51, 234, 0.4);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(147, 51, 234, 0.9);
+      cursor: pointer;
+      pointer-events: auto;
+      transition: all 0.15s ease;
+    }
+
+    .rotate-btn:active {
+      background: rgba(147, 51, 234, 0.4);
+      border-color: rgba(147, 51, 234, 0.8);
+      box-shadow: 0 2px 10px rgba(147, 51, 234, 0.6);
+      -webkit-transform: scale(0.92);
+      transform: scale(0.92);
+    }
+
+    .rotate-btn.btn-rotate-left {
+      bottom: 150px;
+      left: -200px;
+    }
+
+    .rotate-btn.btn-rotate-right {
+      bottom: 150px;
+      right: 150px;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 480px) {
+      .dpad-container {
+        width: 120px;
+        height: 120px;
+        left: -180px;
+      }
+      .dpad-stick {
+        width: 50px;
+        height: 50px;
+      }
+      .action-buttons {
+        width: 160px;
+        height: 160px;
+      }
+      .action-btn {
+        width: 48px;
+        height: 48px;
+      }
+      .rotate-btn {
+        width: 45px;
+        height: 45px;
+      }
+      .rotate-btn.btn-rotate-left {
+        left: -170px;
+      }
+    }
+    /* ========== END MOBILE CONTROLLER STYLES ========== */
+    
+    /* Responsive */
+    @media (max-width:720px){
+      #loading-overlay .bar{ width:220px; } 
+      #planet-panel{ right:8px; left:8px; top:12px; }
+      #planet-overlay-content{ padding:20px; }
+      #planet-overlay-content h1{ font-size:32px !important; }
+      #planet-overlay-content h2{ font-size:20px !important; }
+      #planet-overlay-content > div{ padding:20px !important; }
+      #control-hint{ bottom:120px; left:8px; right:8px; max-width:none; font-size:11px; }
+      #control-status{ bottom:8px; left:8px; font-size:11px; padding:8px 12px; }
+    }
+
+    /* Project editor */
+    #project-editor { 
+      display:none; 
+      position:fixed; 
+      inset:0; 
+      background:rgba(0,0,0,0.75); 
+      z-index:3000; 
+      align-items:center; 
+      justify-content:center; 
+      padding:20px; 
+    }
+    .project-editor__modal { 
+      background:#071018; 
+      padding:18px; 
+      border-radius:10px; 
+      max-width:980px; 
+      width:100%; 
+      color:#fff; 
+    }
+    .project-editor__header { 
+      display:flex; 
+      justify-content:space-between; 
+      align-items:center; 
+    }
+    .project-editor__title { 
+      margin:0; 
+    }
+    .project-editor__actions { 
+      display:flex; 
+      align-items:center; 
+      gap:8px; 
+    }
+    .project-editor__body { 
+      margin-top:12px; 
+      display:flex; 
+      gap:12px; 
+    }
+    .project-editor__textarea { 
+      flex:1; 
+      height:420px; 
+      background:#0b1720; 
+      color:#dbeafe; 
+      padding:12px; 
+      border-radius:6px; 
+      border:1px solid rgba(255,255,255,0.04); 
+      font-family:monospace; 
+      font-size:13px; 
+    }
+    .project-editor__sidebar { 
+      width:280px; 
+    }
+    .project-editor__sidebar-label { 
+      margin-bottom:8px; 
+    }
+    #project-preview { 
+      background:#051018; 
+      padding:10px; 
+      border-radius:6px; 
+      height:360px; 
+      overflow:auto; 
+      color:#cbd5e1; 
+      font-size:13px; 
+    }
+    .project-editor__sidebar-actions { 
+      margin-top:8px; 
+    }
+    .project-editor__apply { 
+      width:100%; 
+      padding:8px; 
+    }
+    .project-editor__upload-input { 
+      display:none; 
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #06b6d4;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0891b2;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="glCanvas"></canvas>
+
+  <div id="loading-overlay" role="status" aria-live="polite">
+    <div class="loading-title" data-i18n="ui.loading">Loading Solar System…</div>
+    <div id="loading-text" class="loading-subtitle">Fetching assets</div>
+    <div class="bar"><div id="loading-fill" class="fill"></div></div>
+  </div>
+
+  <!-- Planet panel (populated by main.js) -->
+  <div id="planet-panel"></div>
+  
+  <!-- Full-screen planet overlay -->
+  <div id="planet-overlay">
+    <div id="planet-overlay-bg"></div>
+    <button id="planet-overlay-close" aria-label="Close">✕</button>
+    <div id="planet-overlay-content">
+      <!-- Content will be populated by main.js -->
+    </div>
+  </div>
+  
+  <!-- Control hint -->
+  <div id="control-hint">
+    <div class="control-hint-title" data-i18n="controls.title">Simple Controls:</div>
+    <div class="control-hint-content">
+      <div><strong>WASD</strong> - <span data-i18n="controls.wasd">Move</span></div>
+      <div><strong>Drag Mouse</strong> - <span data-i18n="controls.drag">Look Around</span></div>
+      <div><strong>Space</strong> - <span data-i18n="controls.space">Up / Interact (when near planet)</span></div>
+      <div><strong>Shift</strong> - <span data-i18n="controls.shift">Down</span></div>
+      <div><strong>Click Planet</strong> - <span data-i18n="controls.click">View Info</span></div>
+      <div><strong>C</strong> - Toggle Cockpit View</div>
+      <div><strong>M</strong> - Toggle Game/Orbit Mode</div>
+    </div>
+  </div>
+  
+  <!-- Spaceship control status -->
+  <div id="control-status">
+    <span id="control-mode-text" data-i18n="ui.gameMode">Game Mode</span> - Fly to planets and click to explore
+  </div>
+  
+  <!-- Proximity indicator -->
+  <div id="proximity-indicator"></div>
+
+  <!-- Mobile On-Screen Controller -->
+  <div id="mobile-controller">
+    <div class="controller-container">
+      <!-- D-Pad / Joystick (Left) -->
+      <div class="dpad-container">
+        <div class="dpad-base"></div>
+        <div class="dpad-stick" id="dpad-stick"></div>
+      </div>
+      
+      <!-- Action Buttons (Right) -->
+      <div class="action-buttons">
+        <div class="action-btn btn-up" data-key="W" data-action="forward"></div>
+        <div class="action-btn btn-right" data-key="D" data-action="right"></div>
+        <div class="action-btn btn-down" data-key="S" data-action="back"></div>
+        <div class="action-btn btn-left" data-key="A" data-action="left"></div>
+        <div class="center-interact-btn" id="center-interact" data-action="updown"></div>
+      </div>
+      
+      <!-- Rotation Buttons -->
+      <div class="rotate-btn btn-rotate-left" data-key="Q" data-action="rotate-left">
+        ↶
+      </div>
+      <div class="rotate-btn btn-rotate-right" data-key="E" data-action="rotate-right">
+        ↷
+      </div>
+    </div>
+  </div>
+
+  <!-- Project editor modal -->
+  <div id="project-editor">
+    <div class="project-editor__modal">
+      <div class="project-editor__header">
+        <h3 class="project-editor__title">Project Map Editor</h3>
+        <div class="project-editor__actions">
+          <button id="project-download">Download JSON</button>
+          <button id="project-upload-btn">Upload JSON</button>
+          <input id="project-upload" type="file" accept=".json" class="project-editor__upload-input">
+          <button id="project-close-editor">Close</button>
+        </div>
+      </div>
+      <div class="project-editor__body">
+        <textarea id="project-json" class="project-editor__textarea" aria-label="JSON Editor"></textarea>
+        <div class="project-editor__sidebar">
+          <div class="project-editor__sidebar-label">Preview</div>
+          <div id="project-preview"></div>
+          <div class="project-editor__sidebar-actions">
+            <button id="project-apply" class="project-editor__apply">Apply to page</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button id="project-open-editor" data-i18n="ui.editProjects">Edit Projects</button>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
