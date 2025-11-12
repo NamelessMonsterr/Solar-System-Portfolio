@@ -18,6 +18,7 @@ body.theme-light {
 }
 
 body.theme-light canvas {
+  -webkit-filter: brightness(1.2) contrast(0.9);
   filter: brightness(1.2) contrast(0.9);
 }
 
@@ -103,6 +104,7 @@ body.theme-retro {
 }
 
 body.theme-retro canvas {
+  -webkit-filter: sepia(0.3) contrast(1.2);
   filter: sepia(0.3) contrast(1.2);
 }
 
@@ -127,6 +129,7 @@ body.theme-minimal {
 }
 
 body.theme-minimal canvas {
+  -webkit-filter: grayscale(0.5) contrast(1.1);
   filter: grayscale(0.5) contrast(1.1);
 }
 
@@ -222,6 +225,8 @@ body.theme-matrix * {
 
 .theme-option:hover {
   background: rgba(255, 255, 255, 0.1);
+  -webkit-transition: background 0.2s;
+  transition: background 0.2s;
 }
 
 .theme-option.selected {
@@ -250,6 +255,7 @@ body.theme-matrix * {
 }
 
 #theme-toggle:hover {
+  -webkit-transform: scale(1.1);
   transform: scale(1.1);
 }
 
@@ -274,6 +280,7 @@ body.theme-matrix * {
   }
   
   body.theme-auto canvas {
+    -webkit-filter: brightness(1.2) contrast(0.9);
     filter: brightness(1.2) contrast(0.9);
   }
   

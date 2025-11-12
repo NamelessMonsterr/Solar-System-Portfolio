@@ -1,38 +1,27 @@
 {
   "name": "solar-system-portfolio",
-  "version": "2.0.0",
-  "description": "Interactive 3D Solar System Portfolio with spatial audio and advanced features",
+  "version": "1.0.0",
+  "description": "Interactive 3D Solar System Portfolio",
+  "main": "index.html",
   "type": "module",
   "scripts": {
+    "start": "python -m http.server 8000",
     "dev": "python -m http.server 8000",
-    "serve": "npx serve .",
-    "test": "echo \"Open http://localhost:8000 and check browser console\"",
-    "deploy:netlify": "netlify deploy --prod",
-    "deploy:vercel": "vercel --prod"
+    "lint": "eslint js/**/*.js --fix",
+    "format": "prettier --write \"**/*.{js,json,css,html}\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "echo \"Build script not yet configured\"",
+    "check-deps": "npm outdated",
+    "update-deps": "npm update"
   },
-  "keywords": [
-    "portfolio",
-    "3d",
-    "threejs",
-    "solar-system",
-    "interactive",
-    "webgl",
-    "spatial-audio",
-    "game"
-  ],
-  "author": "NamelessMonsterr",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/NamelessMonsterr/Portfolio-Website.git"
+  "devDependencies": {
+    "eslint": "^8.50.0",
+    "prettier": "^3.0.3"
   },
   "dependencies": {
     "three": "^0.181.1"
   },
-  "devDependencies": {
-    "serve": "^14.2.0"
-  },
-  "engines": {
-    "node": ">=14.0.0"
-  }
+  "keywords": ["portfolio", "three.js", "3d", "webgl"],
+  "author": "[Your Name]",
+  "license": "MIT"
 }

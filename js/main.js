@@ -1,5 +1,7 @@
-// main.js — Complete integrated version with all fe
-// // ES6 imports removed - using global THREE object and dynamic loading
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 /* ========= Global State ========= */
 const MODELS_PATH = 'resources/';
@@ -59,12 +61,28 @@ let currentShaderBackground = null;
 /* ========= Configuration ========= */
 let CONFIG = {};
 
-// Load configuration from config.js
 async function loadConfig() {
-  // Use default config since we can't import modules dynamically in this context
-  CONFIG = getDefaultConfig();
+  CONFIG = {
+    SPACESHIP: {
+      SPEED: 0.5,
+      ROTATION_SPEED: 0.02,
+      PROXIMITY_THRESHOLD: 5,
+      MOUSE_SENSITIVITY: 0.002
+    },
+    PERFORMANCE: {
+      ENABLE_SHADOWS: true,
+      PIXEL_RATIO_LIMIT: 2,
+      PARTICLE_UPDATE_INTERVAL: 2,
+      VELOCITY_LERP_SPEED: 10,
+      FRAME_RATE_TARGET: 60,
+      CAMERA_FOLLOW_SPEED: 0.1,
+      PROXIMITY_CLOSE_MULTIPLIER: 0.5,
+      PLANET_CHECK_INTERVAL: 2,
+      UPDATE_CHECK_INTERVAL: 5,
+      PLANET_ROTATION_SPEED: 0.005
+    }
+  };
   
-  // Update global variables with config values
   spaceshipSpeed = CONFIG.SPACESHIP.SPEED;
   spaceshipRotationSpeed = CONFIG.SPACESHIP.ROTATION_SPEED;
   proximityThreshold = CONFIG.SPACESHIP.PROXIMITY_THRESHOLD;
@@ -74,35 +92,6 @@ async function loadConfig() {
 }
 
 /* ========= Planet Interaction Functions ========= */
-function openPlanetPanel(planet) {
-  if (!planet || !planet.mesh) return;
-  
-  const panel = document.getElementById('planet-panel');
-  const title = document.getElementById('planet-title');
-  const description = document.getElementById('planet-description');
-  const image = document.getElementById('planet-image');
-  
-  if (!panel || !title || !description) return;
-  
-  title.textContent = planet.name;
-  description.textContent = planet.description || 'No description available.';
-  
-  if (image && planet.image) {
-    image.src = planet.image;
-    image.alt = planet.name;
-    image.style.display = 'block';
-  } else if (image) {
-    image.style.display = 'none';
-  }
-  
-  panel.style.display = 'block';
-  
-  // Close panel when clicking outside
-  setTimeout(() => {
-    document.addEventListener('click', closePlanetPanelOnClickOutside);
-  }, 100);
-}
-
 function closePlanetPanel() {
   const panel = document.getElementById('planet-panel');
   if (panel) {
@@ -237,84 +226,15 @@ function enhanceMaterial(material) {
   }
 }
 
-function getDefaultConfig() {
-  return {
-    SPACESHIP: {
-      SPEED: 0.5,
-      ROTATION_SPEED: 0.02,
-      PROXIMITY_THRESHOLD: 5,
-      MOUSE_SENSITIVITY: 0.002
-    },
-    PERFORMANCE: {
-      ENABLE_SHADOWS: true,
-      PIXEL_RATIO_LIMIT: 2,
-      PARTICLE_UPDATE_INTERVAL: 2
-    }
-  };
-}
+
 
 // Dynamic module loader function
 async function loadModule(modulePath) {
   try {
-    console.log(`[main.js] Loading module: ${modulePath}`);
-    
-    // Fetch the module file
-    const response = await fetch(modulePath);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch module: ${modulePath}`);
-    }
-    
-    const moduleText = await response.text();
-    
-    // Extract the default export or class/function definition
-    // Look for class definitions first
-    const classMatch = moduleText.match(/export\s+default\s+class\s+(\w+)/);
-    if (classMatch) {
-      // Create a function constructor from the class definition
-      const className = classMatch[1];
-      const classDefinition = moduleText.replace(/export\s+default\s+/, '');
-      
-      // Create a new function that returns the class
-      const classConstructor = new Function('THREE', `
-        ${classDefinition}
-        return ${className};
-      `);
-      
-      return classConstructor(window.THREE);
-    }
-    
-    // Look for function exports
-    const functionMatch = moduleText.match(/export\s+default\s+function\s+(\w+)/);
-    if (functionMatch) {
-      const functionName = functionMatch[1];
-      const functionDefinition = moduleText.replace(/export\s+default\s+/, '');
-      
-      const functionConstructor = new Function('THREE', `
-        ${functionDefinition}
-        return ${functionName};
-      `);
-      
-      return functionConstructor(window.THREE);
-    }
-    
-    // Look for arrow function or object exports
-    const exportMatch = moduleText.match(/export\s+default\s+(.+)/);
-    if (exportMatch) {
-      const exportValue = exportMatch[1];
-      
-      // Try to evaluate the export
-      try {
-        const result = new Function('THREE', `return ${exportValue}`)(window.THREE);
-        return result;
-      } catch (e) {
-        console.warn(`[main.js] Could not evaluate export for ${modulePath}:`, e);
-        return null;
-      }
-    }
-    
-    console.warn(`[main.js] No valid export found in ${modulePath}`);
-    return null;
-    
+    console.log(`[main.js] Loading module: /${modulePath}`);
+    // Use dynamic import, assuming modulePath is relative to project root
+    const module = await import(`/${modulePath}`);
+    return module.default;
   } catch (error) {
     console.error(`[main.js] Failed to load module ${modulePath}:`, error);
     return null;
@@ -323,46 +243,7 @@ async function loadModule(modulePath) {
 
 /* ========= Initialization ========= */
 
-function waitForThreeJS() {
-  return new Promise((resolve, reject) => {
-    if (window.THREE_READY && typeof THREE !== 'undefined' && THREE.GLTFLoader) {
-      resolve();
-      return;
-    }
-    
-    window.addEventListener('threejs-ready', () => {
-      if (typeof THREE !== 'undefined' && THREE.GLTFLoader) {
-        resolve();
-      } else {
-        reject(new Error('THREE.js modules not properly loaded.'));
-      }
-    }, { once: true });
-    
-    let attempts = 0;
-    const checkInterval = setInterval(() => {
-      attempts++;
-      if (typeof THREE !== 'undefined' && THREE.WebGLRenderer && THREE.GLTFLoader) {
-        clearInterval(checkInterval);
-        resolve();
-      } else if (attempts > 100) {
-        clearInterval(checkInterval);
-        reject(new Error('THREE.js failed to load'));
-      }
-    }, 100);
-  });
-}
 
-console.log('[main.js] Waiting for Three.js to load...');
-waitForThreeJS().then(async () => {
-  console.log('[main.js] Three.js ready, loading configuration...');
-  await loadConfig(); // Load configuration first
-  console.log('[main.js] Configuration loaded, initializing...');
-  init();
-  animate();
-}).catch((err) => {
-  console.error('[main.js] Initialization failed:', err);
-  showFatal(err.message);
-});
 
 async function init() {
   if (hasInitialized) return;
@@ -393,12 +274,7 @@ async function init() {
   camera.position.set(0, 15, 30);
   camera.lookAt(0, 0, 0);
 
-  // Controls (OrbitControls)
-  if (typeof THREE.OrbitControls !== 'undefined') {
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-  } else {
-    controls = { enabled: false, update: () => {} };
-  }
+  controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.enabled = false;
@@ -568,19 +444,19 @@ function setupMobileController() {
       
       // Update movement keys based on direction
       const threshold = 20;
-      keys['KeyW'] = deltaY < -threshold;
-      keys['KeyS'] = deltaY > threshold;
-      keys['KeyA'] = deltaX < -threshold;
-      keys['KeyD'] = deltaX > threshold;
+      keys['w'] = deltaY < -threshold;
+      keys['s'] = deltaY > threshold;
+      keys['a'] = deltaX < -threshold;
+      keys['d'] = deltaX > threshold;
     };
 
     const endDrag = () => {
       isDragging = false;
       dpadStick.style.transform = 'translate(0, 0)';
-      keys['KeyW'] = false;
-      keys['KeyS'] = false;
-      keys['KeyA'] = false;
-      keys['KeyD'] = false;
+      keys['w'] = false;
+      keys['s'] = false;
+      keys['a'] = false;
+      keys['d'] = false;
     };
 
     dpadStick.addEventListener('touchstart', startDrag);
@@ -795,10 +671,10 @@ async function setupLoadersAndLoadModels() {
   const manager = new THREE.LoadingManager();
   manager.onStart = (url, itemsLoaded, itemsTotal) => {
     if (overlay) overlay.style.display = 'flex';
-    if (loadingText) loadingText.textContent = `Starting ${url}`;
+    if (loadingText) loadingText.textContent = `Loading ${itemsLoaded}/${itemsTotal}`;
   };
   manager.onProgress = (url, itemsLoaded, itemsTotal) => {
-    if (loadingText) loadingText.textContent = `Loading ${itemsLoaded} / ${itemsTotal}`;
+    if (loadingText) loadingText.textContent = `Loading ${itemsLoaded}/${itemsTotal}`;
     if (loadingFill) loadingFill.style.width = Math.round((itemsLoaded / itemsTotal) * 100) + '%';
   };
   manager.onError = (url) => {
@@ -812,29 +688,70 @@ async function setupLoadersAndLoadModels() {
     }, 350);
   };
 
-  if (typeof THREE.GLTFLoader === 'undefined') {
-    showFatal('THREE.GLTFLoader is not available.');
-    return;
-  }
-
-  const loader = new THREE.GLTFLoader(manager);
+  const loader = new GLTFLoader(manager);
   
-  if (typeof THREE.DRACOLoader !== 'undefined') {
-    try {
-      const draco = new THREE.DRACOLoader();
-      draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-      loader.setDRACOLoader(draco);
-      
-      // Preload models
-      await preload(loader, [
-        MODELS_PATH + SOLAR_GLTF,
-        MODELS_PATH + SPACESHIP_GLTF
-      ]);
-    } catch (e) {
-      console.warn('DRACOLoader setup failed:', e);
-    }
-  }
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+  loader.setDRACOLoader(dracoLoader);
 
+  try {
+    if (loadingText) loadingText.textContent = 'Loading solar system...';
+    const solarGltf = await new Promise((resolve, reject) => {
+      loader.load(MODELS_PATH + SOLAR_GLTF, resolve, undefined, reject);
+    });
+    
+    if (solarGltf && solarGltf.scene) {
+      scene.add(solarGltf.scene);
+      
+      solarGltf.scene.traverse((child) => {
+        if (child.isMesh) {
+          const name = child.name.toLowerCase();
+          
+          const planetNames = ['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
+          const matchedPlanet = planetNames.find(p => name.includes(p));
+          
+          if (matchedPlanet) {
+            const bbox = new THREE.Box3().setFromObject(child);
+            const center = new THREE.Vector3();
+            bbox.getCenter(center);
+            
+            PLANETS.push({
+              name: matchedPlanet,
+              mesh: child,
+              bbox: bbox,
+              radius: bbox.getSize(new THREE.Vector3()).length() / 2,
+              worldPosition: center.clone(),
+              info: {}
+            });
+            
+            console.log(`[main.js] Found planet: ${matchedPlanet}`);
+          }
+        }
+      });
+      
+      console.log(`[main.js] Loaded ${PLANETS.length} planets`);
+    }
+
+    if (loadingText) loadingText.textContent = 'Loading spaceship...';
+    const spaceshipGltf = await new Promise((resolve, reject) => {
+      loader.load(MODELS_PATH + SPACESHIP_GLTF, resolve, undefined, reject);
+    });
+    
+    if (spaceshipGltf && spaceshipGltf.scene) {
+      spaceship = spaceshipGltf.scene;
+      spaceship.scale.setScalar(0.5);
+      spaceship.position.set(0, 5, 15);
+      scene.add(spaceship);
+      
+      setupVFX();
+      
+      console.log('[main.js] Spaceship loaded');
+    }
+    
+  } catch (error) {
+    console.error('[main.js] Failed to load models:', error);
+    showFatal('Failed to load 3D models: ' + error.message);
+  }
 }
 
 /* ========= Helper Functions ========= */
@@ -878,7 +795,7 @@ function onPointerDown(e) {
     
     if (match) {
       openPlanetPanel(match);
-      if (e.shiftKey) flyToPlanet(match);
+      if (e.shiftKey) flyToPlanetWithSpaceship(match);
       
       // Track analytics
       if (analyticsManager) {
@@ -889,194 +806,6 @@ function onPointerDown(e) {
 }
 
 /* ========= Spaceship Controls ========= */
-/* ========= Mobile Controller ========= */
-function setupMobileController() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                   (window.matchMedia && window.matchMedia("(max-width: 1024px)").matches);
-  
-  if (!isMobile) {
-    console.log('Desktop detected - mobile controller hidden');
-    return;
-  }
-
-  console.log('Mobile device detected - initializing controller');
-
-  const dpadContainer = document.querySelector('.dpad-container');
-  const dpadStick = document.getElementById('dpad-stick');
-  const actionButtons = document.querySelectorAll('.action-btn');
-  const rotateButtons = document.querySelectorAll('.rotate-btn');
-  const centerInteract = document.getElementById('center-interact');
-
-  if (!dpadContainer || !dpadStick) {
-    console.warn('Mobile controller elements not found');
-    return;
-  }
-
-  // D-Pad state
-  let dpadActive = false;
-  let dpadCenter = { x: 0, y: 0 };
-  let dpadTouchId = null;
-
-  dpadContainer.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    if (dpadTouchId !== null) return;
-
-    const touch = e.touches[0];
-    dpadTouchId = touch.identifier;
-    dpadActive = true;
-
-    const rect = dpadContainer.getBoundingClientRect();
-    dpadCenter.x = rect.left + rect.width / 2;
-    dpadCenter.y = rect.top + rect.height / 2;
-
-    updateDPad(touch.clientX, touch.clientY);
-  }, { passive: false });
-
-  dpadContainer.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    if (!dpadActive) return;
-
-    for (let i = 0; i < e.touches.length; i++) {
-      if (e.touches[i].identifier === dpadTouchId) {
-        updateDPad(e.touches[i].clientX, e.touches[i].clientY);
-        break;
-      }
-    }
-  }, { passive: false });
-
-  const endDPad = (e) => {
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      if (e.changedTouches[i].identifier === dpadTouchId) {
-        dpadActive = false;
-        dpadTouchId = null;
-        resetDPad();
-        break;
-      }
-    }
-  };
-
-  dpadContainer.addEventListener('touchend', endDPad, { passive: false });
-  dpadContainer.addEventListener('touchcancel', endDPad, { passive: false });
-
-  function updateDPad(touchX, touchY) {
-    const dx = touchX - dpadCenter.x;
-    const dy = touchY - dpadCenter.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const maxDistance = 40;
-
-    let clampedDx = dx;
-    let clampedDy = dy;
-    if (distance > maxDistance) {
-      clampedDx = (dx / distance) * maxDistance;
-      clampedDy = (dy / distance) * maxDistance;
-    }
-
-    dpadStick.style.transform = `translate(calc(-50% + ${clampedDx}px), calc(-50% + ${clampedDy}px))`;
-    dpadStick.classList.add('active');
-
-    const normalizedX = clampedDx / maxDistance;
-    const normalizedY = clampedDy / maxDistance;
-    const threshold = 0.3;
-    
-    keys['w'] = normalizedY < -threshold;
-    keys['s'] = normalizedY > threshold;
-    keys['a'] = normalizedX < -threshold;
-    keys['d'] = normalizedX > threshold;
-  }
-
-  function resetDPad() {
-    dpadStick.style.transform = 'translate(-50%, -50%)';
-    dpadStick.classList.remove('active');
-    keys['w'] = keys['s'] = keys['a'] = keys['d'] = false;
-  }
-
-  // Action buttons
-  actionButtons.forEach(btn => {
-    const action = btn.dataset.action;
-
-    btn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      btn.classList.add('pressed');
-      
-      if (action === 'forward') keys['w'] = true;
-      if (action === 'back') keys['s'] = true;
-      if (action === 'left') keys['a'] = true;
-      if (action === 'right') keys['d'] = true;
-    }, { passive: false });
-
-    const endAction = (e) => {
-      e.preventDefault();
-      btn.classList.remove('pressed');
-      
-      if (action === 'forward') keys['w'] = false;
-      if (action === 'back') keys['s'] = false;
-      if (action === 'left') keys['a'] = false;
-      if (action === 'right') keys['d'] = false;
-    };
-
-    btn.addEventListener('touchend', endAction, { passive: false });
-    btn.addEventListener('touchcancel', endAction, { passive: false });
-  });
-
-  // Center interact button
-  if (centerInteract) {
-    let isUpMode = true;
-
-    centerInteract.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      
-      if (nearbyPlanet) {
-        openPlanetPanel(nearbyPlanet);
-        return;
-      }
-
-      if (isUpMode) {
-        keys[' '] = true;
-        keys['shift'] = false;
-      } else {
-        keys['shift'] = true;
-        keys[' '] = false;
-      }
-    }, { passive: false });
-
-    centerInteract.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      keys[' '] = false;
-      keys['shift'] = false;
-      isUpMode = !isUpMode;
-    }, { passive: false });
-  }
-
-  // Rotation buttons
-  rotateButtons.forEach(btn => {
-    const action = btn.dataset.action;
-
-    btn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (action === 'rotate-left') keys['q'] = true;
-      if (action === 'rotate-right') keys['e'] = true;
-    }, { passive: false });
-
-    const endRotate = (e) => {
-      e.preventDefault();
-      if (action === 'rotate-left') keys['q'] = false;
-      if (action === 'rotate-right') keys['e'] = false;
-    };
-
-    btn.addEventListener('touchend', endRotate, { passive: false });
-    btn.addEventListener('touchcancel', endRotate, { passive: false });
-  });
-
-  console.log('✓ Mobile controller initialized');
-}
-
-function updateControlStatus(mode) {
-  const statusEl = document.getElementById('control-mode-text');
-  if (statusEl) {
-    statusEl.textContent = mode;
-    statusEl.style.color = mode === 'Game Mode' ? '#00ff00' : '#06b6d4';
-  }
-}
 
 function checkPlanetProximity() {
   if (!spaceship) return;
@@ -1140,7 +869,7 @@ function updateProximityIndicator(planet, distance) {
 }
 
 /* ========= Flight Logic ========= */
-function flyToPlanet(planetEntry) {
+function flyToPlanetWithSpaceship(planetEntry) {
   if (!spaceship || !planetEntry) {
     openPlanetPanel(planetEntry);
     return;
@@ -1174,11 +903,11 @@ function animate() {
       spaceship.rotation.y = yaw;
       
       // Keyboard rotation
-      if (keys['q']) {
+      if (keys['KeyQ'] || keys['q']) {
         yaw += spaceshipRotationSpeed;
         spaceship.rotation.y = yaw;
       }
-      if (keys['e']) {
+      if (keys['KeyE'] || keys['e']) {
         yaw -= spaceshipRotationSpeed;
         spaceship.rotation.y = yaw;
       }
@@ -1186,12 +915,12 @@ function animate() {
       // Calculate target velocity
       targetVelocity.set(0, 0, 0);
       
-      if (keys['w'] || keys['ArrowUp']) targetVelocity.z -= 1;
-      if (keys['s'] || keys['ArrowDown']) targetVelocity.z += 1;
-      if (keys['a'] || keys['ArrowLeft']) targetVelocity.x -= 1;
-      if (keys['d'] || keys['ArrowRight']) targetVelocity.x += 1;
-      if (keys[' '] && !nearbyPlanet) targetVelocity.y += 1;
-      if (keys['shift'] || keys['Shift']) targetVelocity.y -= 1;
+      if (keys['KeyW'] || keys['w'] || keys['ArrowUp']) targetVelocity.z -= 1;
+      if (keys['KeyS'] || keys['s'] || keys['ArrowDown']) targetVelocity.z += 1;
+      if (keys['KeyA'] || keys['a'] || keys['ArrowLeft']) targetVelocity.x -= 1;
+      if (keys['KeyD'] || keys['d'] || keys['ArrowRight']) targetVelocity.x += 1;
+      if (keys['Space'] || keys[' '] && !nearbyPlanet) targetVelocity.y += 1;
+      if (keys['ShiftLeft'] || keys['ShiftRight'] || keys['shift'] || keys['Shift']) targetVelocity.y -= 1;
       
       if (targetVelocity.length() > 0) {
         targetVelocity.normalize().multiplyScalar(spaceshipSpeed);
@@ -1424,7 +1153,7 @@ function createPlanetPanelUI() {
     const cur = panel._currentPlanet;
     if (cur) {
       isManualControl = false;
-      flyToPlanet(cur);
+      flyToPlanetWithSpaceship(cur);
       panel.style.display = 'none';
     }
   };
@@ -1801,3 +1530,24 @@ window.scene = scene;
 window.camera = camera;
 window.spaceship = spaceship;
 window.PLANETS = PLANETS;
+
+/* ========= Application Initialization ========= */
+async function startApplication() {
+  console.log('[main.js] Starting initialization...');
+  try {
+    await loadConfig();
+    console.log('[main.js] Configuration loaded');
+    await init();
+    animate();
+    console.log('[main.js] ✓ Application initialized successfully');
+  } catch (error) {
+    console.error('[main.js] ✗ Initialization failed:', error);
+    showFatal('Failed to initialize: ' + error.message);
+  }
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', startApplication);
+} else {
+  startApplication();
+}

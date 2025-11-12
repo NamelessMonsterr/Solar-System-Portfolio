@@ -165,6 +165,7 @@
   /* Remove hover effects */
   button:hover,
   a:hover {
+    -webkit-transform: none;
     transform: none;
   }
   
@@ -249,6 +250,7 @@
 @media (max-width: 768px) {
   /* Disable heavy animations */
   .reduce-animations * {
+    -webkit-animation-duration: 0.2s !important;
     animation-duration: 0.2s !important;
   }
   
@@ -257,5 +259,15 @@
   button,
   #planet-panel {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  /* Hardware acceleration for smoother performance */
+  canvas,
+  #planet-overlay,
+  #mobile-controller {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
 }

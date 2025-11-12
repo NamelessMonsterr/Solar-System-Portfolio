@@ -2,10 +2,12 @@
 
 /* High Contrast Mode */
 body.high-contrast {
+  -webkit-filter: contrast(1.5) brightness(1.2);
   filter: contrast(1.5) brightness(1.2);
 }
 
 body.high-contrast #planet-overlay-bg {
+  -webkit-filter: contrast(2) brightness(0.8) !important;
   filter: contrast(2) brightness(0.8) !important;
 }
 
@@ -47,13 +49,16 @@ body.colorblind-mode .center-interact-btn {
 /* Reduced Motion */
 body.reduced-motion,
 body.reduced-motion * {
+  -webkit-animation-duration: 0.01ms !important;
   animation-duration: 0.01ms !important;
+  -webkit-animation-iteration-count: 1 !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
 
 body.reduced-motion #planet-overlay-bg {
+  -webkit-animation: none !important;
   animation: none !important;
 }
 
@@ -73,7 +78,8 @@ a:focus:not(:focus-visible) {
 }
 
 /* Screen Reader Only */
-.sr-only {
+.sr-only,
+.visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -145,7 +151,9 @@ input[type="radio"] {
   *,
   *::before,
   *::after {
+    -webkit-animation-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    -webkit-animation-iteration-count: 1 !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
@@ -155,6 +163,7 @@ input[type="radio"] {
 /* Prefers High Contrast */
 @media (prefers-contrast: high) {
   body {
+    -webkit-filter: contrast(1.3);
     filter: contrast(1.3);
   }
   
