@@ -7,48 +7,9 @@
   <meta name="keywords" content="portfolio, 3D, solar system, interactive, web development, Three.js" />
   <meta name="author" content="Your Name" />
   <title>Interactive 3D Solar System Portfolio</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%2306b6d4'/></svg>'" />
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.module.js",
-      "three/": "https://cdn.jsdelivr.net/npm/three@0.181.1/",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/",
-                "/js/": "/js/"
-    }
-  }
-  </script>
 
-  <script type="module">
-    try {
-      console.log('[Three.js] Loading modules directly...');
-      
-      const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.module.js');
-      const { GLTFLoader } = await import('https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/loaders/GLTFLoader.js');
-      const { DRACOLoader } = await import('https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/loaders/DRACOLoader.js');
-      const { OrbitControls } = await import('https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/controls/OrbitControls.js');
-      
-      window.THREE = {
-        ...THREE,
-        GLTFLoader: GLTFLoader,
-        DRACOLoader: DRACOLoader,
-        OrbitControls: OrbitControls
-      };
-      
-      console.log('[Three.js] ✓ All modules loaded successfully');
-      
-      window.THREE_READY = true;
-      window.dispatchEvent(new Event('threejs-ready'));
-    } catch(err) {
-      console.error('[Three.js] ✗ Error loading modules:', err);
-      window.THREE_LOAD_ERROR = err;
-      const loadingText = document.getElementById('loading-text');
-      if (loadingText) {
-        loadingText.textContent = 'Error: ' + err.message;
-        loadingText.style.color = '#fca5a5';
-      }
-    }
-  </script>
 
   <style>
     html,body { 
@@ -661,35 +622,14 @@
 
   <button id="project-open-editor" data-i18n="ui.editProjects">Edit Projects</button>
 
-  <script>
-    window.THREE_CDN = 'https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.module.js';
-    window.THREE_ADDONS_CDN = 'https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/';
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/"
+    }
+  }
   </script>
-  <script type="module">
-    const loadMainModule = async () => {
-      try {
-        const response = await fetch('js/main.js');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch main.js: ${response.status}`);
-        }
-        const code = await response.text();
-        const blob = new Blob([code], { type: 'text/javascript' });
-        const url = URL.createObjectURL(blob);
-        await import(url);
-        URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error('[Boot] Unable to start application:', error);
-        const overlay = document.getElementById('loading-overlay');
-        const loadingText = document.getElementById('loading-text');
-        if (overlay) {
-          overlay.style.display = 'flex';
-        }
-        if (loadingText) {
-          loadingText.textContent = 'Failed to load application';
-        }
-      }
-    };
-    loadMainModule();
-  </script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -1,19 +1,21 @@
+import * as THREE from 'three';
+
 export class CockpitViewManager {
   constructor(camera, spaceship) {
     this.camera = camera;
     this.spaceship = spaceship;
     this.isInsideCockpit = false;
-    this.cockpitOffset = new THREE.Vector3(0, 1.2, 0.5); // Inside cockpit position
-    this.thirdPersonOffset = new THREE.Vector3(0, 2, 8);
+    this.cockpitOffset = new THREE.Vector3(0, 1.1, 0.25); // Inside cockpit position
+    this.thirdPersonOffset = new THREE.Vector3(0, 2, 7.5);
     this.hudElements = null;
-    this.transitionDuration = 1000; // ms
+    this.transitionDuration = 600; // ms
     this.isTransitioning = false;
   }
 
   init() {
     this.createHUD();
     this.setupControls();
-    console.log('✓ Cockpit view system initialized');
+    
   }
 
   createHUD() {
@@ -150,10 +152,10 @@ export class CockpitViewManager {
           rgba(0, 255, 0, 0.03) 0px,
           transparent 2px,
           transparent 4px,
-          rgba(0, 255, 0, 0.03) 4px
+          rgba(0, 255, 0, 0.02) 4px
         );
         pointer-events: none;
-        opacity: 0.3;
+        opacity: 0.15;
       "></div>
     `;
 
@@ -213,7 +215,7 @@ export class CockpitViewManager {
     // Animate camera transition
     this.animateCameraTransition(this.cockpitOffset, () => {
       this.isTransitioning = false;
-      console.log('✓ Switched to cockpit view');
+      
     });
 
     // Add cockpit sounds
@@ -239,7 +241,7 @@ export class CockpitViewManager {
     // Animate camera transition
     this.animateCameraTransition(this.thirdPersonOffset, () => {
       this.isTransitioning = false;
-      console.log('✓ Switched to third-person view');
+      
     });
 
     // Add exit sound
@@ -247,18 +249,34 @@ export class CockpitViewManager {
   }
 
   animateCameraTransition(targetOffset, onComplete) {
+    if (!this.spaceship) {
+      onComplete();
+      return;
+    }
+
     const startTime = Date.now();
     const startPos = this.camera.position.clone();
-    const startRot = this.camera.rotation.clone();
+    const startQuat = this.camera.quaternion.clone();
+    const offsetWorld = targetOffset.clone().applyQuaternion(this.spaceship.quaternion);
+    const targetPos = this.spaceship.position.clone().add(offsetWorld);
+    const targetQuat = this.isInsideCockpit
+      ? this.spaceship.quaternion.clone()
+      : new THREE.Quaternion().setFromRotationMatrix(
+          new THREE.Matrix4().lookAt(targetPos, this.spaceship.position, new THREE.Vector3(0, 1, 0))
+        );
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / this.transitionDuration, 1);
-      
-      // Easing function (ease-in-out)
       const eased = progress < 0.5
         ? 2 * progress * progress
         : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+      const currentPos = startPos.clone().lerp(targetPos, eased);
+      this.camera.position.copy(currentPos);
+
+      const currentQuat = startQuat.clone().slerp(targetQuat, eased);
+      this.camera.quaternion.copy(currentQuat);
 
       if (progress < 1) {
         requestAnimationFrame(animate);

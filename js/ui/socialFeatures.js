@@ -7,8 +7,6 @@ export class SocialFeaturesManager {
   init() {
     this.createCommentsSection();
     this.loadComments();
-    
-    console.log('✓ Social features initialized');
     this.initialized = true;
   }
 
@@ -189,7 +187,7 @@ export class SocialFeaturesManager {
         this.renderComments();
       }
     } catch (error) {
-      console.warn('Failed to load comments:', error);
+      // Failed to load comments
     }
   }
 
@@ -268,7 +266,7 @@ export class SocialFeaturesManager {
     try {
       localStorage.setItem('portfolio_comments', JSON.stringify(this.comments));
     } catch (error) {
-      console.warn('Failed to save comments:', error);
+      // Failed to save comments
     }
   }
 

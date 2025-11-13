@@ -18,7 +18,7 @@ export class ProceduralMusicGenerator {
       const resumeAudio = () => {
         if (this.audioContext.state === 'suspended') {
           this.audioContext.resume().then(() => {
-            console.log('✓ Audio context resumed');
+            
           });
         }
       };
@@ -31,14 +31,24 @@ export class ProceduralMusicGenerator {
       this.createPlanetAudio();
       
       this.initialized = true;
-      console.log('✓ Procedural music system initialized');
+      
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to initialize audio:', error);
+      this.initialized = false;
+    }
+  }
+
+  setAudioValue(param, value) {
+    if (param && Number.isFinite(value)) {
+      param.value = value;
     }
   }
 
   createMainAmbient() {
     const config = CONFIG.AUDIO.MAIN_AMBIENT;
+    const lfoFreq = Number.isFinite(config.lfoFrequency) ? config.lfoFrequency : 0.2;
+    const lfoAmt = Number.isFinite(config.lfoAmount) ? config.lfoAmount : 0.5;
     const oscillators = [];
     const gains = [];
 
@@ -47,9 +57,11 @@ export class ProceduralMusicGenerator {
       const osc = this.audioContext.createOscillator();
       const gain = this.audioContext.createGain();
       
-      osc.type = waveform;
-      osc.frequency.value = config.frequencies[index];
-      gain.gain.value = config.volumes[index];
+      osc.type = typeof waveform === 'string' ? waveform : 'sine';
+      const freq = Number.isFinite(config.frequencies[index]) ? config.frequencies[index] : 220;
+      const vol = Number.isFinite(config.volumes[index]) ? config.volumes[index] : 0.02;
+      this.setAudioValue(osc.frequency, freq);
+      this.setAudioValue(gain.gain, vol);
       
       osc.connect(gain);
       gain.connect(this.audioContext.destination);
@@ -63,11 +75,13 @@ export class ProceduralMusicGenerator {
     const lfoGain = this.audioContext.createGain();
     
     lfo.type = 'sine';
-    lfo.frequency.value = config.lfoFrequency;
-    lfoGain.gain.value = config.lfoAmount;
+    this.setAudioValue(lfo.frequency, lfoFreq);
+    this.setAudioValue(lfoGain.gain, lfoAmt);
     
     lfo.connect(lfoGain);
-    lfoGain.connect(gains[1].gain); // Modulate middle layer
+    if (gains[1] && gains[1].gain) {
+      lfoGain.connect(gains[1].gain);
+    }
     
     // Start all
     oscillators.forEach(osc => osc.start());
@@ -80,7 +94,7 @@ export class ProceduralMusicGenerator {
       masterGain: gains[0] // Use first gain for global volume
     };
 
-    console.log('✓ Main ambient music created');
+    
   }
 
   createPlanetAudio() {
@@ -89,10 +103,12 @@ export class ProceduralMusicGenerator {
       this.planetAudio.set(planetName, planetAudioData);
     });
 
-    console.log(`✓ Created audio for ${this.planetAudio.size} planets`);
+    
   }
 
   createPlanetOscillators(planetName, config) {
+    const waveform = typeof config.waveform === 'string' ? config.waveform : 'sine';
+    const volume = Number.isFinite(config.volume) ? config.volume : 1;
     const oscillators = [];
     const panner = this.audioContext.createPanner();
     const masterGain = this.audioContext.createGain();
@@ -105,13 +121,15 @@ export class ProceduralMusicGenerator {
     panner.rolloffFactor = CONFIG.AUDIO.SPATIAL.rolloffFactor;
 
     // Create multiple oscillators for richness
-    config.frequencies.forEach((freq, index) => {
+    const freqs = Array.isArray(config.frequencies) && config.frequencies.length > 0 ? config.frequencies : [220];
+    freqs.forEach((freq) => {
       const osc = this.audioContext.createOscillator();
       const gain = this.audioContext.createGain();
       
-      osc.type = config.waveform;
-      osc.frequency.value = freq;
-      gain.gain.value = config.volume / config.frequencies.length;
+      osc.type = waveform;
+      this.setAudioValue(osc.frequency, Number.isFinite(freq) ? freq : 0);
+      const g = volume / freqs.length;
+      this.setAudioValue(gain.gain, g);
       
       // Add slight detuning for chorus effect
       osc.detune.value = (Math.random() - 0.5) * 8;
@@ -127,8 +145,8 @@ export class ProceduralMusicGenerator {
     const lfoGain = this.audioContext.createGain();
     
     lfo.type = 'sine';
-    lfo.frequency.value = 0.3 + Math.random() * 0.4;
-    lfoGain.gain.value = 2;
+    this.setAudioValue(lfo.frequency, 0.3 + Math.random() * 0.4);
+    this.setAudioValue(lfoGain.gain, 2);
     
     lfo.connect(lfoGain);
     if (oscillators[0]) {
@@ -136,7 +154,7 @@ export class ProceduralMusicGenerator {
     }
 
     // Connect to master gain
-    masterGain.gain.value = 0; // Start silent
+    this.setAudioValue(masterGain.gain, 0);
     panner.connect(masterGain);
     masterGain.connect(this.audioContext.destination);
 
@@ -149,7 +167,7 @@ export class ProceduralMusicGenerator {
       panner,
       masterGain,
       lfo,
-      config,
+      config: { ...config, waveform, volume },
       isPlaying: true
     };
   }

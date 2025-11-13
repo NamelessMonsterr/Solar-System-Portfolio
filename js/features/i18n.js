@@ -15,8 +15,6 @@ export class I18nManager {
     await this.loadTranslations(this.currentLanguage);
     this.createLanguageSwitcher();
     this.applyTranslations();
-    
-    console.log(`✓ i18n initialized with language: ${this.currentLanguage}`);
   }
 
   detectLanguage() {
@@ -34,9 +32,7 @@ export class I18nManager {
       }
       const data = await response.json();
       this.translations.set(language, data);
-      console.log(`✓ Loaded translations for ${language}`);
     } catch (error) {
-      console.warn(`Failed to load ${language} translations, falling back to English`);
       if (language !== 'en') {
         await this.loadTranslations('en');
       }
@@ -112,8 +108,6 @@ export class I18nManager {
     this.currentLanguage = language;
     this.applyTranslations();
     this.updateLanguageSwitcher();
-    
-    console.log(`✓ Language changed to: ${language}`);
   }
 
   applyTranslations() {

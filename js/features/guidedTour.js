@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { CONFIG } from '../utils/config.js';
 
 export class GuidedTourManager {
@@ -17,7 +18,7 @@ export class GuidedTourManager {
   init() {
     this.createTourUI();
     this.setupControls();
-    console.log('✓ Guided tour system initialized');
+    
   }
 
   createTourUI() {
@@ -67,6 +68,16 @@ export class GuidedTourManager {
       </div>
 
       <div style="display: flex; gap: 10px;">
+        <button id="tour-next" style="
+          padding: 10px 20px;
+          background: #06b6d4;
+          border: none;
+          border-radius: 6px;
+          color: #000;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 700;
+        ">Next</button>
         <button id="tour-pause" style="
           padding: 10px 20px;
           background: rgba(255, 255, 255, 0.1);
@@ -145,6 +156,11 @@ export class GuidedTourManager {
     document.getElementById('tour-pause').onclick = () => this.togglePause();
     document.getElementById('tour-skip').onclick = () => this.skip();
     document.getElementById('tour-stop').onclick = () => this.stop();
+    const nextBtn = document.getElementById('tour-next');
+    if (nextBtn) nextBtn.onclick = () => {
+      if (!this.isActive) this.start();
+      else this.goToNextPlanet();
+    };
   }
 
   start() {
@@ -162,7 +178,7 @@ export class GuidedTourManager {
     const startBtn = document.getElementById('tour-start-btn');
     if (startBtn) startBtn.style.display = 'none';
 
-    console.log('✓ Guided tour started');
+    
     this.goToNextPlanet();
 
     // Track analytics
@@ -184,7 +200,7 @@ export class GuidedTourManager {
     const startBtn = document.getElementById('tour-start-btn');
     if (startBtn) startBtn.style.display = 'block';
 
-    console.log('✓ Guided tour stopped');
+    
 
     // Track analytics
     if (window.analyticsManager) {
@@ -213,11 +229,12 @@ export class GuidedTourManager {
       return;
     }
 
-    const planetName = this.tourSequence[this.currentStep];
+    const step = this.tourSequence[this.currentStep];
+    const planetName = typeof step === 'string' ? step : step.planet;
     const planet = this.planets.find(p => p.name === planetName);
 
     if (!planet) {
-      console.warn(`Planet not found: ${planetName}`);
+      
       this.currentStep++;
       this.goToNextPlanet();
       return;
@@ -229,28 +246,10 @@ export class GuidedTourManager {
   }
 
   flyToPlanet(planet) {
-    if (!this.spaceship || !planet) return;
-
-    const targetPos = planet.worldPosition.clone();
-    const size = planet.bbox.getSize(new THREE.Vector3());
-    const radius = Math.max(size.x, size.y, size.z) * 0.8;
-    
-    // Calculate approach position
-    const direction = new THREE.Vector3()
-      .subVectors(this.camera.position, targetPos)
-      .normalize();
-    
-    const approachPos = targetPos.clone().add(direction.multiplyScalar(radius + 15));
-
-    // Animate spaceship to position
-    this.animateToPosition(approachPos, planet, () => {
-      // Pause at planet
-      setTimeout(() => {
-        if (this.isActive && !this.isPaused) {
-          this.goToNextPlanet();
-        }
-      }, this.pauseDuration);
-    });
+    if (!planet) return;
+    if (window.flyToPlanetWithSpaceship) {
+      window.flyToPlanetWithSpaceship(planet);
+    }
   }
 
   animateToPosition(targetPos, planet, onComplete) {
@@ -301,9 +300,9 @@ export class GuidedTourManager {
     if (nameEl) nameEl.textContent = planet.name;
     if (stepEl) stepEl.textContent = `${this.currentStep + 1} / ${this.tourSequence.length}`;
     
-    // Get narration from chatbot knowledge
-    const knowledge = CONFIG.CHATBOT.PLANET_KNOWLEDGE[planet.name] || 
-                     `Exploring ${planet.name}...`;
+    const step = this.tourSequence[Math.max(0, this.currentStep - 1)];
+    const configuredMessage = typeof step === 'object' && step?.message;
+    const knowledge = configuredMessage || CONFIG.CHATBOT.PLANET_KNOWLEDGE[planet.name] || `Exploring ${planet.name}...`;
     
     if (narrationEl) {
       narrationEl.textContent = knowledge;

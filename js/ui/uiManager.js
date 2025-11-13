@@ -8,7 +8,6 @@ export class UIManager {
   init() {
     this.cacheElements();
     this.setupEventListeners();
-    console.log('✓ UI Manager initialized');
   }
 
   cacheElements() {

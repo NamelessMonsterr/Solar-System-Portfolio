@@ -1,3 +1,6 @@
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { CONFIG } from '../utils/config.js';
 
 export class SpaceshipSelector {
@@ -12,7 +15,6 @@ export class SpaceshipSelector {
 
   init() {
     this.createSelectorUI();
-    console.log('✓ Spaceship selector initialized');
   }
 
   createSelectorUI() {
@@ -157,7 +159,7 @@ export class SpaceshipSelector {
           this.onShipChanged(newShip);
         }
 
-        console.log(`✓ Switched to spaceship: ${model.name}`);
+
 
         // Track analytics
         if (window.analyticsManager) {
@@ -165,7 +167,6 @@ export class SpaceshipSelector {
         }
       }
     } catch (error) {
-      console.error(`Failed to load spaceship ${shipId}:`, error);
       alert(`Failed to load ${model.name}. Please try again.`);
     } finally {
       this.isLoading = false;
@@ -175,14 +176,10 @@ export class SpaceshipSelector {
 
   async loadShipModel(model) {
     return new Promise((resolve, reject) => {
-      const loader = new THREE.GLTFLoader();
-      
-      // Use DRACO loader if available
-      if (typeof THREE.DRACOLoader !== 'undefined') {
-        const dracoLoader = new THREE.DRACOLoader();
-        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-        loader.setDRACOLoader(dracoLoader);
-      }
+      const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(dracoLoader);
 
       const path = model.file.startsWith('spaceships/') 
         ? `resources/${model.file}` 
@@ -200,6 +197,21 @@ export class SpaceshipSelector {
 
           // Set scale
           ship.scale.setScalar(model.scale);
+
+          // Apply tint
+          if (model.tint) {
+            const color = new THREE.Color(model.tint);
+            ship.traverse((child) => {
+              if (child.isMesh && child.material) {
+                if (Array.isArray(child.material)) {
+                  child.material.forEach(mat => { if (mat.color) mat.color.set(color); if (mat.emissive) mat.emissive.set(color).multiplyScalar(0.15); });
+                } else {
+                  if (child.material.color) child.material.color.set(color);
+                  if (child.material.emissive) child.material.emissive.set(color).multiplyScalar(0.15);
+                }
+              }
+            });
+          }
 
           // Enhance materials
           ship.traverse((child) => {
@@ -222,12 +234,10 @@ export class SpaceshipSelector {
           });
 
           this.loadedModels.set(model.id, ship);
-          console.log(`✓ Loaded spaceship model: ${model.name}`);
           resolve(ship);
         },
         undefined,
         (error) => {
-          console.error(`Error loading ${model.name}:`, error);
           reject(error);
         }
       );

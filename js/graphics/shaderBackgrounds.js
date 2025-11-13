@@ -270,8 +270,6 @@ export class ShaderBackgroundGenerator {
         }
       `
     });
-
-    console.log(`✓ Initialized shaders for ${this.shaders.size} planets`);
   }
 
   getVertexShader() {
@@ -286,7 +284,6 @@ export class ShaderBackgroundGenerator {
   createShaderBackground(planetName, container) {
     const shaderData = this.shaders.get(planetName);
     if (!shaderData) {
-      console.warn(`No shader for planet: ${planetName}`);
       return null;
     }
 
@@ -302,7 +299,6 @@ export class ShaderBackgroundGenerator {
 
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!gl) {
-      console.error('WebGL not supported');
       return null;
     }
 
@@ -316,7 +312,6 @@ export class ShaderBackgroundGenerator {
     gl.linkProgram(program);
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error('Shader program failed to link');
       return null;
     }
 
@@ -375,7 +370,6 @@ export class ShaderBackgroundGenerator {
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
       gl.deleteShader(shader);
       return null;
     }

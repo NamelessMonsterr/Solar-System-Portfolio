@@ -21,7 +21,7 @@ export class AudioManager {
       const resumeAudio = () => {
         if (this.audioContext.state === 'suspended') {
           this.audioContext.resume().then(() => {
-            console.log('✓ Audio context resumed');
+            
           });
         }
       };
@@ -31,11 +31,11 @@ export class AudioManager {
       document.addEventListener('touchstart', resumeAudio, { once: true });
       
       this.initialized = true;
-      console.log('✓ Audio Manager initialized');
+      
     } catch (error) {
-      console.error('Failed to initialize audio:', error);
-    }
-  }
+      // eslint-disable-next-line no-console
+      console.error('Failed to initialize AudioManager:', error);
+    }  }
 
   setMasterVolume(volume) {
     this.masterVolume = Math.max(0, Math.min(1, volume));

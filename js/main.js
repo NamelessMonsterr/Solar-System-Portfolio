@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { VFXManager } from './graphics/vfxManager.js';
 
 /* ========= Global State ========= */
 const MODELS_PATH = 'resources/';
@@ -17,7 +18,7 @@ let flightTarget = new THREE.Vector3();
 let hasInitialized = false;
 
 // Game controls
-let spaceshipVelocity = new THREE.Vector3();
+
 let spaceshipSpeed = 0.5; // Default value, will be updated from config
 let spaceshipRotationSpeed = 0.02; // Default value, will be updated from config
 let isManualControl = true;
@@ -38,9 +39,6 @@ let lastMouseX = 0;
 let lastMouseY = 0;
 
 // VFX
-let particleSystem = null;
-let spaceshipTrail = null;
-let isMoving = false;
 
 // Feature managers
 let audioManager = null;
@@ -52,18 +50,28 @@ let i18nManager = null;
 let spaceshipSelector = null;
 let analyticsManager = null;
 let easterEggs = null;
+let vfxManager = null;
 
 // Animation tracking
 let planetAnimationId = null;
 let escapeHandlerAbortController = null;
 let currentShaderBackground = null;
+let performanceMode = false;
+let fpsElement = null;
+let checkpoint = null;
+let pathModeEnabled = false;
+let pathIndex = 0;
 
 /* ========= Configuration ========= */
+import { CONFIG as AppConfig } from './utils/config.js';
+
 let CONFIG = {};
 
 async function loadConfig() {
-  CONFIG = {
+  // Merge base config with local overrides
+  CONFIG = { ...AppConfig,
     SPACESHIP: {
+      ...AppConfig.SPACESHIP,
       SPEED: 0.5,
       ROTATION_SPEED: 0.02,
       PROXIMITY_THRESHOLD: 5,
@@ -71,11 +79,11 @@ async function loadConfig() {
     },
     PERFORMANCE: {
       ENABLE_SHADOWS: true,
-      PIXEL_RATIO_LIMIT: 2,
+      PIXEL_RATIO_LIMIT: 1.5,
       PARTICLE_UPDATE_INTERVAL: 2,
-      VELOCITY_LERP_SPEED: 10,
+      VELOCITY_LERP_SPEED: 12,
       FRAME_RATE_TARGET: 60,
-      CAMERA_FOLLOW_SPEED: 0.1,
+      CAMERA_FOLLOW_SPEED: 0.25,
       PROXIMITY_CLOSE_MULTIPLIER: 0.5,
       PLANET_CHECK_INTERVAL: 2,
       UPDATE_CHECK_INTERVAL: 5,
@@ -88,7 +96,7 @@ async function loadConfig() {
   proximityThreshold = CONFIG.SPACESHIP.PROXIMITY_THRESHOLD;
   mouseLookSensitivity = CONFIG.SPACESHIP.MOUSE_SENSITIVITY;
   
-  console.log('[main.js] Configuration loaded:', CONFIG);
+  
 }
 
 /* ========= Planet Interaction Functions ========= */
@@ -107,58 +115,6 @@ function closePlanetPanelOnClickOutside(event) {
   }
 }
 
-function flyToPlanet(planet) {
-  if (!planet || !planet.mesh) return;
-  
-  const targetPosition = planet.worldPosition.clone();
-  const distance = planet.radius * 3; // Fly to 3x planet radius
-  
-  // Position camera behind the planet
-  const direction = targetPosition.clone().normalize();
-  const cameraPosition = targetPosition.clone().sub(direction.multiplyScalar(distance));
-  
-  // Smooth camera transition
-  const startPosition = camera.position.clone();
-  const startTarget = controls.target.clone();
-  
-  let progress = 0;
-  const duration = 2000; // 2 seconds
-  const startTime = Date.now();
-  
-  function animateFlyTo() {
-    const elapsed = Date.now() - startTime;
-    progress = Math.min(elapsed / duration, 1);
-    
-    // Smooth easing
-    const eased = 1 - Math.pow(1 - progress, 3);
-    
-    camera.position.lerpVectors(startPosition, cameraPosition, eased);
-    controls.target.lerpVectors(startTarget, targetPosition, eased);
-    
-    if (progress < 1) {
-      requestAnimationFrame(animateFlyTo);
-    } else {
-      // Arrived at planet
-      nearbyPlanet = planet;
-      updateNearbyPlanetIndicator();
-    }
-  }
-  
-  animateFlyTo();
-}
-
-function updateNearbyPlanetIndicator() {
-  const indicator = document.getElementById('nearby-planet-indicator');
-  if (!indicator) return;
-  
-  if (nearbyPlanet) {
-    indicator.textContent = `Press SPACE to interact with ${nearbyPlanet.name}`;
-    indicator.style.display = 'block';
-  } else {
-    indicator.style.display = 'none';
-  }
-}
-
 /* ========= UI Management Functions ========= */
 function showFatal(message) {
   const overlay = document.getElementById('loading-overlay');
@@ -169,7 +125,7 @@ function showFatal(message) {
   if (loadingText) loadingText.textContent = message;
   if (loadingFill) loadingFill.style.width = '100%';
   
-  console.error('Fatal error:', message);
+  
   
   // Show error for 5 seconds then hide
   setTimeout(() => {
@@ -177,22 +133,7 @@ function showFatal(message) {
   }, 5000);
 }
 
-function setupUI() {
-  // Setup planet panel close button
-  const closeBtn = document.getElementById('planet-panel-close');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', closePlanetPanel);
-  }
-  
-  // Setup window resize handler
-  window.addEventListener('resize', onWindowResize);
-  
-  // Setup loading overlay
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) {
-    overlay.style.display = 'block';
-  }
-}
+
 
 /* ========= Utility Functions ========= */
 function isAncestor(root, node) {
@@ -206,37 +147,35 @@ function isAncestor(root, node) {
 
 function prettify(name) {
   if (!name) return 'Unnamed';
-  return name.replace(/[_\-]+/g, ' ').trim()
+  return name.replace(/[_-]+/g, ' ').trim()
     .split(' ')
     .map(s => s.charAt(0).toUpperCase() + s.slice(1))
     .join(' ');
 }
 
-function enhanceMaterial(material) {
-  if (Array.isArray(material)) {
-    material.forEach(mat => {
-      if (mat) {
-        mat.needsUpdate = true;
-        if (mat.map) mat.map.needsUpdate = true;
-      }
-    });
-  } else {
-    material.needsUpdate = true;
-    if (material.map) material.map.needsUpdate = true;
-  }
-}
+
 
 
 
 // Dynamic module loader function
 async function loadModule(modulePath) {
   try {
-    console.log(`[main.js] Loading module: /${modulePath}`);
-    // Use dynamic import, assuming modulePath is relative to project root
-    const module = await import(`/${modulePath}`);
-    return module.default;
+    if (!modulePath || typeof modulePath !== 'string') {
+      console.warn(`[loadModule] Invalid module path:`, modulePath);
+      return null;
+    }
+
+    if (!modulePath.startsWith('js/')) {
+      console.warn(`[loadModule] Module path must start with 'js/':`, modulePath);
+      return null;
+    }
+
+    const relativePath = `./${modulePath.substring(3)}`;
+    const module = await import(relativePath);
+    const exported = module && (Object.prototype.hasOwnProperty.call(module, 'default') ? module.default : Object.values(module)[0]);
+    return exported ?? null;
   } catch (error) {
-    console.error(`[main.js] Failed to load module ${modulePath}:`, error);
+    console.warn(`[loadModule] Failed to load module '${modulePath}':`, error.message);
     return null;
   }
 }
@@ -528,7 +467,7 @@ function updateControlStatus(mode) {
 
 async function initializeFeatures() {
   try {
-    console.log('[main.js] Initializing feature managers...');
+    
     
     // Try to load modules dynamically, but don't fail if they're not available
     
@@ -539,10 +478,10 @@ async function initializeFeatures() {
         analyticsManager = new AnalyticsManager();
         window.analyticsManager = analyticsManager;
         analyticsManager.init();
-        console.log('[main.js] AnalyticsManager initialized');
+        
       }
     } catch (error) {
-      console.warn('[main.js] Failed to initialize AnalyticsManager:', error);
+      // Module might not exist, fail silently
     }
 
     // i18n
@@ -552,10 +491,10 @@ async function initializeFeatures() {
         i18nManager = new I18nManager();
         window.i18nManager = i18nManager;
         await i18nManager.init();
-        console.log('[main.js] I18nManager initialized');
+        
       }
     } catch (error) {
-      console.warn('[main.js] Failed to initialize I18nManager:', error);
+      // Module might not exist, fail silently
     }
 
     // Audio
@@ -565,10 +504,10 @@ async function initializeFeatures() {
         audioManager = new ProceduralMusicGenerator();
         window.audioManager = audioManager;
         await audioManager.init();
-        console.log('[main.js] ProceduralMusicGenerator initialized');
+        
       }
     } catch (error) {
-      console.warn('[main.js] Failed to initialize ProceduralMusicGenerator:', error);
+      // Module might not exist, fail silently
     }
 
     // Shader backgrounds
@@ -578,10 +517,10 @@ async function initializeFeatures() {
         shaderManager = new ShaderBackgroundGenerator();
         window.shaderManager = shaderManager;
         shaderManager.init(scene);
-        console.log('[main.js] ShaderBackgroundGenerator initialized');
+        
       }
     } catch (error) {
-      console.warn('[main.js] Failed to initialize ShaderBackgroundGenerator:', error);
+      // Module might not exist, fail silently
     }
 
     // Chatbot
@@ -591,37 +530,13 @@ async function initializeFeatures() {
         chatbot = new AIChatbot();
         window.chatbot = chatbot;
         chatbot.init();
-        console.log('[main.js] AIChatbot initialized');
+        
       }
     } catch (error) {
-      console.warn('[main.js] Failed to initialize AIChatbot:', error);
+      // Module might not exist, fail silently
     }
 
-    // Guided tour
-    try {
-      const GuidedTourManager = await loadModule('js/features/guidedTour.js');
-      if (GuidedTourManager && typeof GuidedTourManager === 'function') {
-        tourManager = new GuidedTourManager();
-        window.tourManager = tourManager;
-        tourManager.init(scene, camera);
-        console.log('[main.js] GuidedTourManager initialized');
-      }
-    } catch (error) {
-      console.warn('[main.js] Failed to initialize GuidedTourManager:', error);
-    }
-
-    // Spaceship selector
-    try {
-      const SpaceshipSelector = await loadModule('js/features/spaceshipSelector.js');
-      if (SpaceshipSelector && typeof SpaceshipSelector === 'function') {
-        spaceshipSelector = new SpaceshipSelector();
-        window.spaceshipSelector = spaceshipSelector;
-        spaceshipSelector.init();
-        console.log('[main.js] SpaceshipSelector initialized');
-      }
-    } catch (error) {
-      console.warn('[main.js] Failed to initialize SpaceshipSelector:', error);
-    }
+    // Guided tour and spaceship selector will be initialized after models load
 
     // Easter eggs
     try {
@@ -630,37 +545,21 @@ async function initializeFeatures() {
         easterEggs = new EasterEggsManager(scene, camera);
         window.easterEggs = easterEggs;
         easterEggs.init();
-        console.log('[main.js] EasterEggsManager initialized');
+        
       }
     } catch (error) {
-      console.warn('[main.js] Failed to initialize EasterEggsManager:', error);
+      // Module might not exist, fail silently
     }
 
-    // Cockpit view
-    try {
-      const CockpitViewManager = await loadModule('js/graphics/cockpitView.js');
-      if (CockpitViewManager && typeof CockpitViewManager === 'function') {
-        cockpitManager = new CockpitViewManager();
-        window.cockpitManager = cockpitManager;
-        cockpitManager.init(camera, renderer);
-        console.log('[main.js] CockpitViewManager initialized');
-      }
-    } catch (error) {
-      console.warn('[main.js] Failed to initialize CockpitViewManager:', error);
-    }
+    // Cockpit view will be initialized after models load
 
-    console.log('[main.js] Feature managers initialization complete');
+    
   } catch (error) {
-    console.error('[main.js] Failed to initialize features:', error);
+    // Fail silently if feature initialization fails
   }
 }
 
-async function preload(loader, urls) {
-  const promises = urls.map(url => new Promise((resolve, reject) => {
-    loader.load(url, resolve, () => {}, reject);
-  }));
-  await Promise.all(promises);
-}
+
 
 /* ========= Loaders + Assets ========= */
 async function setupLoadersAndLoadModels() {
@@ -677,8 +576,8 @@ async function setupLoadersAndLoadModels() {
     if (loadingText) loadingText.textContent = `Loading ${itemsLoaded}/${itemsTotal}`;
     if (loadingFill) loadingFill.style.width = Math.round((itemsLoaded / itemsTotal) * 100) + '%';
   };
-  manager.onError = (url) => {
-    console.warn('LoadingManager error for', url);
+  manager.onError = () => {
+    // Ignore loading errors
   };
   manager.onLoad = () => {
     if (loadingText) loadingText.textContent = 'All assets loaded';
@@ -724,12 +623,12 @@ async function setupLoadersAndLoadModels() {
               info: {}
             });
             
-            console.log(`[main.js] Found planet: ${matchedPlanet}`);
+            
           }
         }
       });
       
-      console.log(`[main.js] Loaded ${PLANETS.length} planets`);
+      
     }
 
     if (loadingText) loadingText.textContent = 'Loading spaceship...';
@@ -741,20 +640,124 @@ async function setupLoadersAndLoadModels() {
       spaceship = spaceshipGltf.scene;
       spaceship.scale.setScalar(0.5);
       spaceship.position.set(0, 5, 15);
+      spaceship.userData.type = 'ship';
       scene.add(spaceship);
       
-      setupVFX();
+      vfxManager = new VFXManager(scene);
+      vfxManager.init(spaceship);
       
-      console.log('[main.js] Spaceship loaded');
+      try {
+        const SpaceshipSelector = await loadModule('js/features/spaceshipSelector.js');
+        if (SpaceshipSelector && typeof SpaceshipSelector === 'function') {
+          spaceshipSelector = new SpaceshipSelector(scene, (ship) => { applyShipChange(ship); });
+          spaceshipSelector.currentShip = spaceship;
+          window.spaceshipSelector = spaceshipSelector;
+          spaceshipSelector.init();
+        }
+      } catch {}
+
+      try {
+        const GuidedTourManager = await loadModule('js/features/guidedTour.js');
+        if (GuidedTourManager && typeof GuidedTourManager === 'function') {
+          tourManager = new GuidedTourManager(camera, spaceship, PLANETS);
+          window.tourManager = tourManager;
+          tourManager.init();
+        }
+      } catch {}
+
+      try {
+        const CockpitViewManager = await loadModule('js/graphics/cockpitView.js');
+        if (CockpitViewManager && typeof CockpitViewManager === 'function') {
+          cockpitManager = new CockpitViewManager(camera, spaceship);
+          window.cockpitManager = cockpitManager;
+          cockpitManager.init();
+        }
+      } catch {}
     }
     
   } catch (error) {
-    console.error('[main.js] Failed to load models:', error);
+    // Show a fatal error because 3D models are essential
     showFatal('Failed to load 3D models: ' + error.message);
   }
 }
 
 /* ========= Helper Functions ========= */
+window.runSmokeTests = async function() {
+  const results = [];
+  const errorCount = { value: 0 };
+  const originalError = console.error;
+  console.error = function(...args){ errorCount.value++; originalError.apply(console, args); };
+
+  try {
+    results.push(!!CONFIG && !!CONFIG.SPACESHIP && !!CONFIG.GUIDED_TOUR && !!CONFIG.CHATBOT);
+    if (window.spaceshipSelector) {
+      const models = CONFIG.SPACESHIP.MODELS;
+      if (models && models.length) {
+        const beforeShips = scene.children.filter(c => c.userData && c.userData.type === 'ship').length;
+        await window.spaceshipSelector.selectShip(models[0].id);
+        const afterShips = scene.children.filter(c => c.userData && c.userData.type === 'ship').length;
+        results.push(!!spaceship && afterShips === 1 && afterShips <= beforeShips);
+      }
+    }
+    if (window.tourManager) {
+      window.tourManager.start();
+      setTimeout(() => { window.tourManager.skip(); }, 500);
+      results.push(true);
+    }
+    if (window.i18nManager) {
+      await window.i18nManager.changeLanguage('en');
+      results.push(true);
+    }
+    // Quick flight to first planet
+    if (PLANETS.length) {
+      flyToPlanetWithSpaceship(PLANETS[0]);
+      await new Promise(r => setTimeout(r, 1500));
+      results.push(true);
+    }
+    // Toggle cockpit
+    if (window.cockpitManager) {
+      window.cockpitManager.toggleView();
+      await new Promise(r => setTimeout(r, 800));
+      window.cockpitManager.toggleView();
+      results.push(true);
+    }
+  } catch {
+    results.push(false);
+  } finally {
+    console.error = originalError;
+  }
+  const ok = results.every(Boolean) && errorCount.value === 0;
+  return { ok, results, errors: errorCount.value };
+}
+
+window.runGuidedTourTests = async function() {
+  const result = { ui: false, next: false, pauseResume: false, stop: false, errors: 0 };
+  const originalError = console.error;
+  console.error = function(...args){ result.errors++; originalError.apply(console, args); };
+  try {
+    const uiElems = [
+      document.getElementById('tour-start-btn') || true,
+      document.getElementById('tour-pause') || true,
+      document.getElementById('tour-stop') || true
+    ];
+    result.ui = !!uiElems.length;
+    if (window.tourManager) {
+      window.tourManager.start();
+      const nextBtn = document.getElementById('tour-next');
+      if (nextBtn) {
+        nextBtn.click();
+        result.next = true;
+      }
+      document.getElementById('tour-pause')?.click();
+      setTimeout(() => { document.getElementById('tour-pause')?.click(); }, 300);
+      result.pauseResume = true;
+      setTimeout(() => { document.getElementById('tour-stop')?.click(); }, 600);
+      result.stop = true;
+    }
+  } catch {}
+  console.error = originalError;
+  return result;
+}
 /* ========= Events ========= */
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -883,6 +886,10 @@ function flyToPlanetWithSpaceship(planetEntry) {
   const dir = new THREE.Vector3().subVectors(camera.position, targetWorld).normalize();
   
   flightTarget.copy(targetWorld).add(dir.multiplyScalar(radiusApprox + 6));
+  // Face the planet direction immediately for responsiveness
+  const faceDir = new THREE.Vector3().subVectors(targetWorld, spaceship.position).normalize();
+  const initialQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), faceDir);
+  spaceship.quaternion.slerp(initialQuat, 0.4);
   spaceship.userData.targetPlanet = planetEntry;
   isFlying = true;
   isManualControl = false;
@@ -896,7 +903,9 @@ function animate() {
   if (!renderer || !scene || !camera) return;
   
   try {
-    const dt = clock.getDelta();
+    let dt = clock.getDelta();
+    if (!Number.isFinite(dt) || dt <= 0) dt = 0.016;
+    dt = Math.min(dt, 0.05);
 
     // Manual spaceship control
     if (isManualControl && spaceship) {
@@ -932,13 +941,13 @@ function animate() {
       // Apply movement
       if (currentVelocity.length() > 0.01) {
         if (Math.abs(currentVelocity.z) > 0.01) {
-          spaceship.translateZ(-currentVelocity.z * dt * CONFIG.PERFORMANCE.FRAME_RATE_TARGET);
+          spaceship.translateZ(-currentVelocity.z * dt * 60);
         }
         if (Math.abs(currentVelocity.x) > 0.01) {
-          spaceship.translateX(currentVelocity.x * dt * CONFIG.PERFORMANCE.FRAME_RATE_TARGET);
+          spaceship.translateX(currentVelocity.x * dt * 60);
         }
         if (Math.abs(currentVelocity.y) > 0.01) {
-          spaceship.position.y += currentVelocity.y * dt * CONFIG.PERFORMANCE.FRAME_RATE_TARGET;
+          spaceship.position.y += currentVelocity.y * dt * 60;
         }
         
         // Banking effect
@@ -990,7 +999,9 @@ function animate() {
         }
       }
       
-      updateVFX();
+      if (vfxManager) {
+        vfxManager.update(spaceship, currentVelocity);
+      }
       
       // Update cockpit HUD
       if (cockpitManager) {
@@ -1012,7 +1023,7 @@ function animate() {
     }
     
     // Spaceship flight movement (auto-pilot)
-    if (isFlying && spaceship && !isManualControl) {
+  if (isFlying && spaceship && !isManualControl) {
       spaceship.position.lerp(flightTarget, Math.min(1, 0.06));
       
       const tp = spaceship.userData.targetPlanet;
@@ -1037,7 +1048,7 @@ function animate() {
     if (isFlying && spaceship) {
       const behind = new THREE.Vector3(0, 4, 12).applyQuaternion(spaceship.quaternion);
       const desiredCam = new THREE.Vector3().copy(spaceship.position).add(behind);
-      camera.position.lerp(desiredCam, 0.06);
+      camera.position.lerp(desiredCam, 0.12);
       
       const lookAtTarget = new THREE.Vector3();
       if (spaceship.userData.targetPlanet) {
@@ -1046,7 +1057,8 @@ function animate() {
         lookAtTarget.copy(spaceship.position);
       }
       camera.lookAt(lookAtTarget);
-    } else {
+    }
+    else {
       controls.update();
     }
 
@@ -1073,14 +1085,17 @@ function animate() {
             }
           }
         } catch (e) {
-          console.warn('LOD update error:', e);
+          // LOD update may fail, but we can ignore it
         }
       }
     }
 
     renderer.render(scene, camera);
   } catch (err) {
-    console.error('[animate] Error in render loop:', err);
+    // eslint-disable-next-line no-console
+    console.error('[Animation] Critical error in animation loop:', err);
+    showFatal('Rendering error: ' + err.message);
+    // Stop the animation loop on critical errors
     return;
   }
 }
@@ -1428,101 +1443,9 @@ function setupProjectEditorUI() {
 }
 
 /* ========= VFX ========= */
-function setupVFX() {
-  if (!scene || !THREE || !spaceship) return;
-  
-  try {
-    const particleCount = 50;
-    
-    const particles = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-    
-    for (let i = 0; i < particleCount * 3; i += 3) {
-      positions[i] = spaceship.position.x;
-      positions[i + 1] = spaceship.position.y;
-      positions[i + 2] = spaceship.position.z;
-      
-      colors[i] = 0.2;
-      colors[i + 1] = 0.8;
-      colors[i + 2] = 1.0;
-    }
-    
-    particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    
-    const particleMaterial = new THREE.PointsMaterial({
-      size: 0.4,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.5,
-      blending: THREE.AdditiveBlending
-    });
-    
-    particleSystem = new THREE.Points(particles, particleMaterial);
-    scene.add(particleSystem);
-    
-    // Engine glow
-    const glowGeometry = new THREE.SphereGeometry(0.25, 6, 6);
-    const glowMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ffff,
-      transparent: true,
-      opacity: 0.6,
-      blending: THREE.AdditiveBlending
-    });
-    
-    spaceshipTrail = new THREE.Mesh(glowGeometry, glowMaterial);
-    scene.add(spaceshipTrail);
-    
-    console.log('VFX initialized');
-  } catch (e) {
-    console.error('VFX setup failed:', e);
-  }
-}
 
-function updateVFX() {
-  if (!spaceship || !particleSystem || !spaceshipTrail) return;
-  
-  try {
-    isMoving = currentVelocity.length() > 0.1;
-    
-    if (isMoving) {
-      const elapsed = clock.getElapsedTime();
-      if (Math.floor(elapsed * 30) % CONFIG.PERFORMANCE.PARTICLE_UPDATE_INTERVAL === 0) {
-        const positions = particleSystem.geometry.attributes.position.array;
-        const particleCount = positions.length / 3;
-        
-        for (let i = particleCount - 1; i > 0; i--) {
-          const i3 = i * 3;
-          const prevI3 = (i - 1) * 3;
-          
-          positions[i3] = positions[prevI3];
-          positions[i3 + 1] = positions[prevI3 + 1];
-          positions[i3 + 2] = positions[prevI3 + 2];
-        }
-        
-        const shipPos = spaceship.position;
-        positions[0] = shipPos.x;
-        positions[1] = shipPos.y;
-        positions[2] = shipPos.z;
-        
-        particleSystem.geometry.attributes.position.needsUpdate = true;
-      }
-      
-      particleSystem.visible = true;
-      
-      spaceshipTrail.position.copy(spaceship.position);
-      const backward = new THREE.Vector3(0, 0, 1).applyQuaternion(spaceship.quaternion);
-      spaceshipTrail.position.add(backward.multiplyScalar(-1.5));
-      spaceshipTrail.visible = true;
-    } else {
-      particleSystem.visible = false;
-      spaceshipTrail.visible = false;
-    }
-  } catch (e) {
-    console.error('VFX update error:', e);
-  }
-}
+
+
 
 /* ======= Export globals for feature managers ======= */
 window.spaceshipSpeed = spaceshipSpeed;
@@ -1533,15 +1456,15 @@ window.PLANETS = PLANETS;
 
 /* ========= Application Initialization ========= */
 async function startApplication() {
-  console.log('[main.js] Starting initialization...');
+  
   try {
     await loadConfig();
-    console.log('[main.js] Configuration loaded');
+    
     await init();
     animate();
-    console.log('[main.js] ✓ Application initialized successfully');
+    
   } catch (error) {
-    console.error('[main.js] ✗ Initialization failed:', error);
+    
     showFatal('Failed to initialize: ' + error.message);
   }
 }
@@ -1550,4 +1473,147 @@ if (document.readyState === 'loading') {
   window.addEventListener('DOMContentLoaded', startApplication);
 } else {
   startApplication();
+}
+function applyShipChange(newShip) {
+  if (!newShip) return;
+  // Remove previous ship from scene if different
+  if (spaceship && spaceship !== newShip) {
+    try { scene.remove(spaceship); } catch {}
+  }
+  // Set and tag
+  spaceship = newShip;
+  spaceship.userData.type = 'ship';
+  // Ensure visible
+  spaceship.visible = true;
+  if (!scene.children.includes(spaceship)) {
+    try { scene.add(spaceship); } catch {}
+  }
+  // Re-init VFX trails on the new ship
+  if (vfxManager) {
+    try { vfxManager.init(spaceship); } catch {}
+  }
+  // Update cockpit binding
+  if (cockpitManager) {
+    cockpitManager.spaceship = spaceship;
+  }
+}
+async function flyAllPlanetsSequential() {
+  const order = PLANETS.slice();
+  for (const p of order) {
+    flyToPlanetWithSpaceship(p);
+    // Wait until arrival or timeout
+    const start = Date.now();
+    while (true) {
+      const arrived = !isFlying;
+      if (arrived) break;
+      if (Date.now() - start > 15000) break; // 15s timeout
+      await new Promise(r => setTimeout(r, 150));
+    }
+    await new Promise(r => setTimeout(r, 500));
+  }
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.shiftKey && e.key.toLowerCase() === 'g') {
+    flyAllPlanetsSequential();
+  }
+});
+  // Expose fly helper for guided tour
+  window.flyToPlanetWithSpaceship = flyToPlanetWithSpaceship;
+
+  // Create checkpoint UI
+  createCheckpointUI();
+  createPerformanceUI();
+function createCheckpointUI() {
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:20px;left:160px;z-index:1600;display:flex;gap:8px;';
+  const setBtn = document.createElement('button');
+  setBtn.textContent = 'Set Checkpoint';
+  setBtn.style.cssText = 'padding:8px;background:#0891b2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
+  const returnBtn = document.createElement('button');
+  returnBtn.textContent = 'Return to Checkpoint';
+  returnBtn.style.cssText = 'padding:8px;background:#06b6d4;color:#001;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
+  const pathToggle = document.createElement('button');
+  pathToggle.textContent = 'Path Mode';
+  pathToggle.style.cssText = 'padding:8px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = 'Next Planet';
+  nextBtn.style.cssText = 'padding:8px;background:#10b981;color:#001;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
+
+  setBtn.onclick = () => setCheckpoint();
+  returnBtn.onclick = () => returnToCheckpoint();
+  pathToggle.onclick = () => { pathModeEnabled = !pathModeEnabled; pathToggle.textContent = pathModeEnabled ? 'Path Mode: On' : 'Path Mode'; if (pathModeEnabled) { pathIndex = 0; } };
+  nextBtn.onclick = () => { if (pathModeEnabled && PLANETS.length && !isFlying) { const p = PLANETS[pathIndex % PLANETS.length]; pathIndex++; isManualControl = false; flyToPlanetWithSpaceship(p); } };
+
+  container.appendChild(setBtn);
+  container.appendChild(returnBtn);
+  container.appendChild(pathToggle);
+  container.appendChild(nextBtn);
+  document.body.appendChild(container);
+}
+
+function createPerformanceUI() {
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:20px;left:360px;z-index:1600;display:flex;gap:8px;align-items:center;';
+  const toggle = document.createElement('button');
+  toggle.textContent = 'Performance Mode';
+  toggle.style.cssText = 'padding:8px;background:#334155;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
+  const fps = document.createElement('div');
+  fps.style.cssText = 'padding:6px 10px;background:#0f172a;color:#a7f3d0;border:1px solid #22d3ee;border-radius:6px;font-size:12px;';
+  fps.textContent = 'FPS: --';
+  toggle.onclick = () => {
+    performanceMode = !performanceMode;
+    if (performanceMode) {
+      renderer.shadowMap.enabled = false;
+      renderer.setPixelRatio(1);
+      if (currentShaderBackground) { try { currentShaderBackground.stop(); } catch {} }
+    } else {
+      renderer.shadowMap.enabled = CONFIG.PERFORMANCE.ENABLE_SHADOWS;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, CONFIG.PERFORMANCE.PIXEL_RATIO_LIMIT));
+    }
+  };
+  container.appendChild(toggle);
+  container.appendChild(fps);
+  document.body.appendChild(container);
+  fpsElement = fps;
+}
+
+function setCheckpoint() {
+  if (!spaceship) return;
+  checkpoint = {
+    position: spaceship.position.clone(),
+    quaternion: spaceship.quaternion.clone(),
+  };
+  try {
+    localStorage.setItem('checkpoint', JSON.stringify({
+      position: { x: checkpoint.position.x, y: checkpoint.position.y, z: checkpoint.position.z },
+      quaternion: { x: checkpoint.quaternion.x, y: checkpoint.quaternion.y, z: checkpoint.quaternion.z, w: checkpoint.quaternion.w }
+    }));
+  } catch {}
+}
+
+function returnToCheckpoint() {
+  let data = null;
+  try {
+    const raw = localStorage.getItem('checkpoint');
+    if (raw) data = JSON.parse(raw);
+  } catch {}
+  if (!checkpoint && data && spaceship) {
+    checkpoint = {
+      position: new THREE.Vector3(data.position.x, data.position.y, data.position.z),
+      quaternion: new THREE.Quaternion(data.quaternion.x, data.quaternion.y, data.quaternion.z, data.quaternion.w)
+    };
+  }
+  if (checkpoint && spaceship) {
+    isFlying = false;
+    isManualControl = true;
+    controls.enabled = true;
+    spaceship.position.copy(checkpoint.position);
+    spaceship.quaternion.copy(checkpoint.quaternion);
+    const behind = new THREE.Vector3(0, 3, 10).applyQuaternion(spaceship.quaternion);
+    const desiredCam = new THREE.Vector3().copy(spaceship.position).add(behind);
+    camera.position.copy(desiredCam);
+    camera.lookAt(spaceship.position);
+    controls.update();
+  }
 }

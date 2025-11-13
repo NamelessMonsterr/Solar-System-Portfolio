@@ -1,3 +1,4 @@
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.module.js';
 import { CONFIG } from '../utils/config.js';
 
 export class EasterEggsManager {
@@ -17,7 +18,7 @@ export class EasterEggsManager {
     this.createHiddenPlanet();
     this.setupSecretMessages();
     
-    console.log('✓ Easter eggs initialized (try the Konami code!)');
+    
   }
 
   setupKonamiCode() {
@@ -72,7 +73,7 @@ export class EasterEggsManager {
       window.analyticsManager.trackEvent('easter_egg', { type: 'konami' });
     }
 
-    console.log('🎮 Konami code activated!');
+    
   }
 
   enableHyperspeed(duration) {
@@ -164,36 +165,21 @@ export class EasterEggsManager {
     };
     animateBeacon();
 
-    console.log('🔮 Hidden planet created at coordinates:', CONFIG.EASTER_EGGS.HIDDEN_PLANET.position);
+    
   }
 
   setupSecretMessages() {
     // Add hidden messages in console
-    const messages = [
-      '%c🌟 Welcome, Space Explorer! %c\nYou found the developer console!',
-      '%c💫 Try flying really far out... you might find something special.',
-      '%c🚀 Hint: Up Up Down Down Left Right Left Right B A',
-      '%c⭐ This portfolio was built with Three.js, Web Audio API, and lots of ☕'
-    ];
-
-    messages.forEach(msg => {
-      console.log(
-        msg,
-        'color: #06b6d4; font-size: 16px; font-weight: bold;',
-        'color: #888; font-size: 12px;'
-      );
-    });
 
     // Add secret command
     window.revealSecrets = () => {
-      console.log('%c🎁 SECRET COORDINATES:', 'color: #FFD700; font-size: 20px; font-weight: bold;');
-      console.log('Hidden Planet X:', CONFIG.EASTER_EGGS.HIDDEN_PLANET.position);
-      console.log('Use these coordinates to find the secret planet!');
+      
+      
+      
       this.showNotification('🗺️ Secrets Revealed', 'Check the console for coordinates!', '#FFD700');
     };
 
-    console.log('%cType %crevealSecrets()%c to get hints!', 
-      'color: #888;', 'color: #FFD700; font-weight: bold;', 'color: #888;');
+    
   }
 
   showNotification(title, message, color = '#06b6d4') {

@@ -8,7 +8,7 @@ export const Helpers = {
    */
   prettify(name) {
     if (!name) return 'Unnamed';
-    return name.replace(/[_\-]+/g, ' ').trim()
+    return name.replace(/[_-]+/g, ' ').trim()
       .split(' ')
       .map(s => s.charAt(0).toUpperCase() + s.slice(1))
       .join(' ');
@@ -119,7 +119,6 @@ export const Helpers = {
         localStorage.setItem(key, JSON.stringify(value));
         return true;
       } catch (error) {
-        console.warn('Failed to save to localStorage:', error);
         return false;
       }
     },
@@ -129,7 +128,6 @@ export const Helpers = {
         const item = localStorage.getItem(key);
         return item ? JSON.parse(item) : defaultValue;
       } catch (error) {
-        console.warn('Failed to read from localStorage:', error);
         return defaultValue;
       }
     },
@@ -139,7 +137,6 @@ export const Helpers = {
         localStorage.removeItem(key);
         return true;
       } catch (error) {
-        console.warn('Failed to remove from localStorage:', error);
         return false;
       }
     }

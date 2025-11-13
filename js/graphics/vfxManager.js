@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // VFX Manager - Visual effects controller
 export class VFXManager {
   constructor(scene) {
@@ -13,8 +15,9 @@ export class VFXManager {
     try {
       this.createParticleSystem(spaceship);
       this.createEngineGlow(spaceship);
-      console.log('✓ VFX Manager initialized');
+      
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('VFX initialization failed:', error);
     }
   }
@@ -63,10 +66,13 @@ export class VFXManager {
     });
     
     this.engineGlow = new THREE.Mesh(glowGeometry, glowMaterial);
+    if (spaceship && spaceship.position) {
+      this.engineGlow.position.copy(spaceship.position);
+    }
     this.scene.add(this.engineGlow);
   }
 
-  update(spaceship, velocity, deltaTime) {
+  update(spaceship, velocity) {
     if (!spaceship || !this.particleSystem || !this.engineGlow) return;
     
     try {
@@ -109,7 +115,8 @@ export class VFXManager {
         this.engineGlow.visible = false;
       }
     } catch (error) {
-      console.error('VFX update error:', error);
+      // eslint-disable-next-line no-console
+      console.error('VFX update failed:', error);
     }
   }
 

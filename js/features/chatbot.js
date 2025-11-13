@@ -11,7 +11,7 @@ export class AIChatbot {
   init() {
     this.createChatInterface();
     this.setupEventListeners();
-    console.log('✓ AI Chatbot initialized');
+    
   }
 
   createChatInterface() {

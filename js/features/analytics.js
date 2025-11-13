@@ -36,7 +36,7 @@ export class AnalyticsManager {
       });
     });
 
-    console.log('✓ Analytics initialized');
+    
   }
 
   initGoogleAnalytics() {
@@ -47,7 +47,7 @@ export class AnalyticsManager {
     document.head.appendChild(script);
 
     window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
+    function gtag(){window.dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', this.config.ANALYTICS.GA_ID);
 
@@ -76,7 +76,8 @@ export class AnalyticsManager {
 
     // Log to console in development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      console.log('📊 Analytics:', eventName, data);
+      // eslint-disable-next-line no-console
+      console.log('[Analytics]', eventName, event);
     }
 
     // Store in localStorage for local analytics
@@ -100,7 +101,8 @@ export class AnalyticsManager {
       };
       localStorage.setItem('portfolio_analytics', JSON.stringify(analytics));
     } catch (error) {
-      console.warn('Failed to save analytics to localStorage:', error);
+      // eslint-disable-next-line no-console
+      console.warn('[Analytics] Failed to save to localStorage:', error.message);
     }
   }
 

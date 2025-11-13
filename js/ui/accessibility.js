@@ -15,8 +15,6 @@ export class AccessibilityManager {
     this.applySettings();
     this.setupKeyboardNavigation();
     this.addAriaLabels();
-    
-    console.log('✓ Accessibility features initialized');
   }
 
   createAccessibilityMenu() {
