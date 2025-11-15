@@ -561,7 +561,7 @@ async function initializeFeatures() {
         
       }
     } catch (error) {
-      // Module might not exist, fail silently
+      console.warn('Feature initialization failed:', error);
     }
 
     
@@ -576,7 +576,7 @@ async function initializeFeatures() {
         
       }
     } catch (error) {
-      // Module might not exist, fail silently
+      console.warn('Feature initialization failed:', error);
     }
 
     // Chatbot
@@ -589,7 +589,7 @@ async function initializeFeatures() {
         
       }
     } catch (error) {
-      // Module might not exist, fail silently
+      console.warn('Feature initialization failed:', error);
     }
 
     // Guided tour and spaceship selector will be initialized after models load
@@ -604,7 +604,7 @@ async function initializeFeatures() {
         
       }
     } catch (error) {
-      // Module might not exist, fail silently
+      console.warn('Feature initialization failed:', error);
     }
 
     // Cockpit view will be initialized after models load
@@ -1010,7 +1010,7 @@ function animate() {
   try {
     let dt = clock.getDelta();
     if (!Number.isFinite(dt) || dt <= 0) dt = 0.016;
-    dt = Math.min(dt, 0.05);
+    // dt = Math.min(dt, 0.05); // Q-4: Removed hardcoded delta time cap for consistent performance
 
     vfxFrameCounter++;
 
@@ -1019,11 +1019,11 @@ function animate() {
       spaceship.rotation.y = yaw;
       
       // Keyboard rotation
-      if (keys['KeyQ'] || keys['q']) {
+      if (keys['KeyQ']) {
         yaw += spaceshipRotationSpeed;
         spaceship.rotation.y = yaw;
       }
-      if (keys['KeyE'] || keys['e']) {
+      if (keys['KeyE']) {
         yaw -= spaceshipRotationSpeed;
         spaceship.rotation.y = yaw;
       }
@@ -1031,12 +1031,12 @@ function animate() {
       // Calculate target velocity
       targetVelocity.set(0, 0, 0);
       
-      if (keys['KeyW'] || keys['w'] || keys['ArrowUp']) targetVelocity.z -= 1;
-      if (keys['KeyS'] || keys['s'] || keys['ArrowDown']) targetVelocity.z += 1;
-      if (keys['KeyA'] || keys['a'] || keys['ArrowLeft']) targetVelocity.x -= 1;
-      if (keys['KeyD'] || keys['d'] || keys['ArrowRight']) targetVelocity.x += 1;
-      if (keys['Space'] || keys[' '] && !nearbyPlanet) targetVelocity.y += 1;
-      if (keys['ShiftLeft'] || keys['ShiftRight'] || keys['shift'] || keys['Shift']) targetVelocity.y -= 1;
+      if (keys['KeyW'] || keys['ArrowUp']) targetVelocity.z -= 1;
+      if (keys['KeyS'] || keys['ArrowDown']) targetVelocity.z += 1;
+      if (keys['KeyA'] || keys['ArrowLeft']) targetVelocity.x -= 1;
+      if (keys['KeyD'] || keys['ArrowRight']) targetVelocity.x += 1;
+      if (keys['Space'] && !nearbyPlanet) targetVelocity.y += 1;
+      if (keys['ShiftLeft'] || keys['ShiftRight']) targetVelocity.y -= 1;
       
       if (targetVelocity.length() > 0) {
         targetVelocity.normalize().multiplyScalar(spaceshipSpeed);
@@ -1352,29 +1352,29 @@ function openPlanetPanel(planetEntry) {
   
   // Build content
   let contentHTML = `
-    <h1 style="font-size:48px;font-weight:700;margin-bottom:20px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,0.5);">${title}</h1>
+    <h1 class="planet-title">${title}</h1>
     
-    <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border-radius:12px;padding:30px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.1);">
-      <h2 style="font-size:24px;font-weight:600;margin-bottom:16px;color:#06b6d4;">User Info</h2>
-      <div style="font-size:16px;color:#ddd;line-height:1.8;margin-bottom:16px;">${short || 'Welcome to ' + title}</div>
-      ${long ? `<div style="font-size:15px;color:#cbd5e1;line-height:1.8;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);">${long}</div>` : ''}
+    <div class="info-section">
+      <h2>User Info</h2>
+      <p>${short || 'Welcome to ' + title}</p>
+      ${long ? `<div class="long-desc">${long}</div>` : ''}
     </div>
   `;
   
   // Projects
   if (mapEntry && mapEntry.projects && Array.isArray(mapEntry.projects) && mapEntry.projects.length > 0) {
     contentHTML += `
-      <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border-radius:12px;padding:30px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.1);">
-        <h2 style="font-size:24px;font-weight:600;margin-bottom:20px;color:#06b6d4;">Projects</h2>
-        <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="info-section">
+        <h2>Projects</h2>
+        <div class="project-list">
     `;
     mapEntry.projects.forEach(project => {
       contentHTML += `
-        <div style="padding:20px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:4px solid #06b6d4;">
-          <div style="font-weight:600;color:#fff;margin-bottom:8px;font-size:18px;">${project.name || 'Project'}</div>
-          <div style="font-size:14px;color:#aaa;margin-bottom:12px;line-height:1.6;">${project.description || ''}</div>
-          ${project.tech ? `<div style="font-size:13px;color:#888;margin-bottom:8px;">Tech: ${project.tech}</div>` : ''}
-          ${project.link ? `<a href="${project.link}" target="_blank" style="color:#06b6d4;font-size:14px;text-decoration:none;display:inline-block;margin-top:8px;">View Project →</a>` : ''}
+        <div class="project-item">
+          <div class="project-item-title">${project.name || 'Project'}</div>
+          <div class="project-item-desc">${project.description || ''}</div>
+          ${project.tech ? `<div class="project-item-tech">Tech: ${project.tech}</div>` : ''}
+          ${project.link ? `<a href="${project.link}" target="_blank" class="project-item-link">View Project →</a>` : ''}
         </div>
       `;
     });
@@ -1385,27 +1385,27 @@ function openPlanetPanel(planetEntry) {
   if (mapEntry && mapEntry.contact) {
     const contact = mapEntry.contact;
     contentHTML += `
-      <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border-radius:12px;padding:30px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.1);">
-        <h2 style="font-size:24px;font-weight:600;margin-bottom:20px;color:#06b6d4;">Contact</h2>
-        <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="info-section">
+        <h2>Contact</h2>
+        <div class="contact-list">
     `;
     if (contact.email) {
-      contentHTML += `<div style="padding:12px;background:rgba(255,255,255,0.05);border-radius:6px;"><strong style="color:#fff;">Email:</strong> <a href="mailto:${contact.email}" style="color:#06b6d4;text-decoration:none;">${contact.email}</a></div>`;
+      contentHTML += `<div class="contact-item"><strong>Email:</strong> <a href="mailto:${contact.email}">${contact.email}</a></div>`;
     }
     if (contact.phone) {
-      contentHTML += `<div style="padding:12px;background:rgba(255,255,255,0.05);border-radius:6px;"><strong style="color:#fff;">Phone:</strong> <span style="color:#aaa;">${contact.phone}</span></div>`;
+      contentHTML += `<div class="contact-item"><strong>Phone:</strong> <span>${contact.phone}</span></div>`;
     }
     if (contact.location) {
-      contentHTML += `<div style="padding:12px;background:rgba(255,255,255,0.05);border-radius:6px;"><strong style="color:#fff;">Location:</strong> <span style="color:#aaa;">${contact.location}</span></div>`;
+      contentHTML += `<div class="contact-item"><strong>Location:</strong> <span>${contact.location}</span></div>`;
     }
     contentHTML += `</div></div>`;
   }
   
   // Links
   if (mapEntry && Array.isArray(mapEntry.links) && mapEntry.links.length > 0) {
-    contentHTML += `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;">`;
+    contentHTML += `<div class="link-list">`;
     for (const l of mapEntry.links) {
-      contentHTML += `<a href="${l.url || '#'}" target="_blank" rel="noopener noreferrer" style="padding:12px 20px;background:rgba(6,182,212,0.2);color:#06b6d4;border-radius:8px;font-size:14px;text-decoration:none;display:inline-block;border:1px solid rgba(6,182,212,0.3);">${l.label || l.url}</a>`;
+      contentHTML += `<a href="${l.url || '#'}" target="_blank" rel="noopener noreferrer" class="link-item">${l.label || l.url}</a>`;
     }
     contentHTML += `</div>`;
   }
@@ -1574,13 +1574,6 @@ function setupProjectEditorUI() {
 
 
 
-/* ======= Export globals for feature managers ======= */
-window.spaceshipSpeed = spaceshipSpeed;
-window.scene = scene;
-window.camera = camera;
-window.spaceship = spaceship;
-window.PLANETS = PLANETS;
-
 /* ========= Application Initialization ========= */
 async function startApplication() {
   
@@ -1588,6 +1581,14 @@ async function startApplication() {
     await loadConfig();
     
     await init();
+    
+    /* ======= Export globals for feature managers ======= */
+    window.spaceshipSpeed = spaceshipSpeed;
+    window.scene = scene;
+    window.camera = camera;
+    window.spaceship = spaceship;
+    window.PLANETS = PLANETS;
+    
     animate();
     
   } catch (error) {
