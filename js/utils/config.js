@@ -65,26 +65,28 @@ export const CONFIG = {
 
   AUDIO: {
     MAIN_AMBIENT: {
-      waveforms: ['sine', 'triangle', 'sawtooth'],
-      frequencies: [220, 330, 440],
-      volumes: [0.05, 0.03, 0.02]
+      // Melodic C major chord for pleasant ambient background
+      waveforms: ['sine', 'sine', 'sine'],
+      frequencies: [261.63, 329.63, 392.00], // C, E, G - C major chord
+      volumes: [0.02, 0.015, 0.01] // Softer, balanced volumes
     },
     PLANETS: {
-      Mercury: { frequencies: [440, 550] },
-      Venus: { frequencies: [330, 415] },
-      Earth: { frequencies: [261, 329] },
-      Mars: { frequencies: [220, 277] },
-      Jupiter: { frequencies: [146, 184] },
-      Saturn: { frequencies: [130, 164] },
-      Uranus: { frequencies: [110, 138] },
-      Neptune: { frequencies: [98, 123] }
+      // Musical frequencies based on planetary characteristics
+      Mercury: { frequencies: [523.25, 659.25] }, // C5, E5 - bright and quick
+      Venus: { frequencies: [392.00, 493.88] }, // G4, B4 - harmonious and beautiful
+      Earth: { frequencies: [261.63, 329.63] }, // C4, E4 - grounded and stable
+      Mars: { frequencies: [220.00, 277.18] }, // A3, C#4 - energetic and bold
+      Jupiter: { frequencies: [174.61, 220.00] }, // F3, A3 - grand and majestic
+      Saturn: { frequencies: [146.83, 185.00] }, // D3, F#3 - deep and contemplative
+      Uranus: { frequencies: [123.47, 155.56] }, // B2, D#3 - mysterious and unique
+      Neptune: { frequencies: [103.83, 130.81] } // G#2, C3 - dreamy and ethereal
     },
     SPATIAL: {
       panningModel: 'HRTF',
       distanceModel: 'inverse',
       refDistance: 1,
       maxDistance: 1000,
-      rolloffFactor: 1
+      rolloffFactor: 0.3 // Gentler falloff for more pleasant spatial audio
     }
   }
 };

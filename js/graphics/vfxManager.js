@@ -23,7 +23,7 @@ export class VFXManager {
   }
 
   createParticleSystem(spaceship) {
-    const particleCount = 50;
+    const particleCount = 25;
     
     const particles = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);

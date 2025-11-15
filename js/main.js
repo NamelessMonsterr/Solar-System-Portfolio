@@ -38,6 +38,24 @@ let isMouseDown = false;
 let lastMouseX = 0;
 let lastMouseY = 0;
 
+// Camera controls
+let cameraYaw = 0;
+let cameraPitch = 0.3; // Slight downward angle
+let cameraDistance = 10;
+let cameraMinDistance = 3;
+let cameraMaxDistance = 50;
+let isRightMouseDown = false;
+
+// Spaceship control event listeners (for explicit management)
+let spaceshipKeydownListener = null;
+let spaceshipKeyupListener = null;
+let spaceshipMousedownListener = null;
+let spaceshipMouseupListener = null;
+let spaceshipMousemoveListener = null;
+let spaceshipWheelListener = null;
+let spaceshipClickListener = null;
+let spaceshipContextMenuListener = null;
+
 // VFX
 
 // Feature managers
@@ -46,7 +64,7 @@ let shaderManager = null;
 let cockpitManager = null;
 let chatbot = null;
 let tourManager = null;
-let i18nManager = null;
+
 let spaceshipSelector = null;
 let analyticsManager = null;
 let easterEggs = null;
@@ -56,11 +74,9 @@ let vfxManager = null;
 let planetAnimationId = null;
 let escapeHandlerAbortController = null;
 let currentShaderBackground = null;
-let performanceMode = false;
-let fpsElement = null;
 let checkpoint = null;
 let pathModeEnabled = false;
-let pathIndex = 0;
+let vfxFrameCounter = 0;
 
 /* ========= Configuration ========= */
 import { CONFIG as AppConfig } from './utils/config.js';
@@ -78,15 +94,15 @@ async function loadConfig() {
       MOUSE_SENSITIVITY: 0.002
     },
     PERFORMANCE: {
-      ENABLE_SHADOWS: true,
-      PIXEL_RATIO_LIMIT: 1.5,
+      ENABLE_SHADOWS: false,
+      PIXEL_RATIO_LIMIT: 1,
       PARTICLE_UPDATE_INTERVAL: 2,
       VELOCITY_LERP_SPEED: 12,
       FRAME_RATE_TARGET: 60,
       CAMERA_FOLLOW_SPEED: 0.25,
       PROXIMITY_CLOSE_MULTIPLIER: 0.5,
-      PLANET_CHECK_INTERVAL: 2,
-      UPDATE_CHECK_INTERVAL: 5,
+      PLANET_CHECK_INTERVAL: 5,
+      UPDATE_CHECK_INTERVAL: 10,
       PLANET_ROTATION_SPEED: 0.005
     }
   };
@@ -161,12 +177,10 @@ function prettify(name) {
 async function loadModule(modulePath) {
   try {
     if (!modulePath || typeof modulePath !== 'string') {
-      console.warn(`[loadModule] Invalid module path:`, modulePath);
       return null;
     }
 
     if (!modulePath.startsWith('js/')) {
-      console.warn(`[loadModule] Module path must start with 'js/':`, modulePath);
       return null;
     }
 
@@ -175,7 +189,6 @@ async function loadModule(modulePath) {
     const exported = module && (Object.prototype.hasOwnProperty.call(module, 'default') ? module.default : Object.values(module)[0]);
     return exported ?? null;
   } catch (error) {
-    console.warn(`[loadModule] Failed to load module '${modulePath}':`, error.message);
     return null;
   }
 }
@@ -262,20 +275,15 @@ async function init() {
 
 /* ========= Control Functions ========= */
 function setupSpaceshipControls() {
-  // Keyboard controls
-  document.addEventListener('keydown', (event) => {
+  // Define spaceship control event listeners
+  spaceshipKeydownListener = (event) => {
     keys[event.code] = true;
-    
+
     // Toggle cockpit view
     if (event.code === 'KeyC') {
       toggleCockpitView();
     }
-    
-    // Toggle game mode
-    if (event.code === 'KeyM') {
-      toggleGameMode();
-    }
-    
+
     // Interact with nearby planet
     if (event.code === 'Space') {
       if (nearbyPlanet) {
@@ -283,52 +291,82 @@ function setupSpaceshipControls() {
         openPlanetPanel(nearbyPlanet);
       }
     }
-  });
+  };
 
-  document.addEventListener('keyup', (event) => {
+  spaceshipKeyupListener = (event) => {
     keys[event.code] = false;
-  });
+  };
 
-  // Mouse controls
-  document.addEventListener('mousedown', (event) => {
-    if (event.button === 0) { // Left mouse button
+  spaceshipMousedownListener = (event) => {
+    if (event.button === 0) { // Left mouse button - spaceship control
       isMouseDown = true;
       lastMouseX = event.clientX;
       lastMouseY = event.clientY;
+    } else if (event.button === 2) { // Right mouse button - camera control
+      isRightMouseDown = true;
+      lastMouseX = event.clientX;
+      lastMouseY = event.clientY;
+      event.preventDefault(); // Prevent context menu
     }
-  });
+  };
 
-  document.addEventListener('mouseup', (event) => {
+  spaceshipMouseupListener = (event) => {
     if (event.button === 0) {
       isMouseDown = false;
+    } else if (event.button === 2) {
+      isRightMouseDown = false;
     }
-  });
+  };
 
-  document.addEventListener('mousemove', (event) => {
+  spaceshipMousemoveListener = (event) => {
     if (isMouseDown && isManualControl) {
+      // Left click - spaceship rotation
       const deltaX = event.clientX - lastMouseX;
       const deltaY = event.clientY - lastMouseY;
-      
+
       yaw += deltaX * mouseLookSensitivity;
       pitch += deltaY * mouseLookSensitivity;
-      
+
       // Limit pitch
       pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
-      
+
+      lastMouseX = event.clientX;
+      lastMouseY = event.clientY;
+    } else if (isRightMouseDown) {
+      // Right click - camera look around
+      const deltaX = event.clientX - lastMouseX;
+      const deltaY = event.clientY - lastMouseY;
+
+      cameraYaw -= deltaX * mouseLookSensitivity;
+      cameraPitch += deltaY * mouseLookSensitivity;
+
+      // Limit camera pitch
+      cameraPitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraPitch));
+
       lastMouseX = event.clientX;
       lastMouseY = event.clientY;
     }
-  });
+  };
 
-  // Click to interact with planets
-  renderer.domElement.addEventListener('click', (event) => {
+  spaceshipWheelListener = (event) => {
+    event.preventDefault();
+    const zoomSpeed = 0.5;
+    cameraDistance += event.deltaY * 0.01 * zoomSpeed;
+    cameraDistance = Math.max(cameraMinDistance, Math.min(cameraMaxDistance, cameraDistance));
+  };
+
+  spaceshipContextMenuListener = (event) => {
+    event.preventDefault();
+  };
+
+  spaceshipClickListener = (event) => {
     if (isManualControl) {
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      
+
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(PLANETS.map(p => p.mesh));
-      
+
       if (intersects.length > 0) {
         const planet = PLANETS.find(p => p.mesh === intersects[0].object);
         if (planet) {
@@ -336,7 +374,39 @@ function setupSpaceshipControls() {
         }
       }
     }
+  };
+
+  // Initially add spaceship controls (since game mode is default)
+  addSpaceshipControls();
+
+  // Global key listener for mode toggle (always active)
+  document.addEventListener('keydown', (event) => {
+    if (event.code === 'KeyM') {
+      toggleGameMode();
+    }
   });
+}
+
+function addSpaceshipControls() {
+  document.addEventListener('keydown', spaceshipKeydownListener);
+  document.addEventListener('keyup', spaceshipKeyupListener);
+  document.addEventListener('mousedown', spaceshipMousedownListener);
+  document.addEventListener('mouseup', spaceshipMouseupListener);
+  document.addEventListener('mousemove', spaceshipMousemoveListener);
+  document.addEventListener('wheel', spaceshipWheelListener);
+  renderer.domElement.addEventListener('contextmenu', spaceshipContextMenuListener);
+  renderer.domElement.addEventListener('click', spaceshipClickListener);
+}
+
+function removeSpaceshipControls() {
+  document.removeEventListener('keydown', spaceshipKeydownListener);
+  document.removeEventListener('keyup', spaceshipKeyupListener);
+  document.removeEventListener('mousedown', spaceshipMousedownListener);
+  document.removeEventListener('mouseup', spaceshipMouseupListener);
+  document.removeEventListener('mousemove', spaceshipMousemoveListener);
+  document.removeEventListener('wheel', spaceshipWheelListener);
+  renderer.domElement.removeEventListener('contextmenu', spaceshipContextMenuListener);
+  renderer.domElement.removeEventListener('click', spaceshipClickListener);
 }
 
 function setupMobileController() {
@@ -440,9 +510,19 @@ function toggleCockpitView() {
 }
 
 function toggleGameMode() {
-  isManualControl = !isManualControl;
-  controls.enabled = !isManualControl;
-  updateControlStatus(isManualControl ? 'Game Mode' : 'Orbit Mode');
+  if (isManualControl) {
+    // Switch to OrbitControls mode
+    isManualControl = false;
+    controls.enabled = true;
+    removeSpaceshipControls();
+    updateControlStatus('Orbit Mode');
+  } else {
+    // Switch to Game/Spaceship mode
+    isManualControl = true;
+    controls.enabled = false;
+    addSpaceshipControls();
+    updateControlStatus('Game Mode');
+  }
 }
 
 function updateControlStatus(mode) {
@@ -484,31 +564,7 @@ async function initializeFeatures() {
       // Module might not exist, fail silently
     }
 
-    // i18n
-    try {
-      const I18nManager = await loadModule('js/features/i18n.js');
-      if (I18nManager && typeof I18nManager === 'function') {
-        i18nManager = new I18nManager();
-        window.i18nManager = i18nManager;
-        await i18nManager.init();
-        
-      }
-    } catch (error) {
-      // Module might not exist, fail silently
-    }
-
-    // Audio
-    try {
-      const ProceduralMusicGenerator = await loadModule('js/audio/proceduralMusic.js');
-      if (ProceduralMusicGenerator && typeof ProceduralMusicGenerator === 'function') {
-        audioManager = new ProceduralMusicGenerator();
-        window.audioManager = audioManager;
-        await audioManager.init();
-        
-      }
-    } catch (error) {
-      // Module might not exist, fail silently
-    }
+    
 
     // Shader backgrounds
     try {
@@ -613,9 +669,12 @@ async function setupLoadersAndLoadModels() {
             const bbox = new THREE.Box3().setFromObject(child);
             const center = new THREE.Vector3();
             bbox.getCenter(center);
-            
+
+            // Capitalize first letter for proper display and tour matching
+            const capitalizedName = matchedPlanet.charAt(0).toUpperCase() + matchedPlanet.slice(1);
+
             PLANETS.push({
-              name: matchedPlanet,
+              name: capitalizedName,
               mesh: child,
               bbox: bbox,
               radius: bbox.getSize(new THREE.Vector3()).length() / 2,
@@ -654,7 +713,7 @@ async function setupLoadersAndLoadModels() {
           window.spaceshipSelector = spaceshipSelector;
           spaceshipSelector.init();
         }
-      } catch {}
+      } catch (e) { /* ignore */ }
 
       try {
         const GuidedTourManager = await loadModule('js/features/guidedTour.js');
@@ -663,7 +722,7 @@ async function setupLoadersAndLoadModels() {
           window.tourManager = tourManager;
           tourManager.init();
         }
-      } catch {}
+      } catch (e) { /* ignore */ }
 
       try {
         const CockpitViewManager = await loadModule('js/graphics/cockpitView.js');
@@ -672,7 +731,50 @@ async function setupLoadersAndLoadModels() {
           window.cockpitManager = cockpitManager;
           cockpitManager.init();
         }
-      } catch {}
+      } catch (e) { /* ignore */ }
+
+      if (PLANETS.length) {
+        const forward = new THREE.Vector3(0,0,-1).applyQuaternion(spaceship.quaternion).normalize();
+        let best = null;
+        let bestScore = -Infinity;
+        for (const planet of PLANETS) {
+          if (!planet.mesh) continue;
+          const pos = new THREE.Vector3();
+          planet.mesh.getWorldPosition(pos);
+          const toPlanet = new THREE.Vector3().subVectors(pos, spaceship.position);
+          const dist = toPlanet.length();
+          if (dist === 0) continue;
+          const dir = toPlanet.clone().normalize();
+          const facing = dir.dot(forward);
+          const score = facing - dist * 0.0005;
+          if (score > bestScore) { bestScore = score; best = { planet, dir }; }
+        }
+        if (!best) {
+          let closest = null;
+          let minDist = Infinity;
+          for (const planet of PLANETS) {
+            if (!planet.mesh) continue;
+            const pos = new THREE.Vector3();
+            planet.mesh.getWorldPosition(pos);
+            const d = spaceship.position.distanceTo(pos);
+            if (d < minDist) { minDist = d; closest = planet; }
+          }
+          if (closest) {
+            const pos = new THREE.Vector3();
+            closest.mesh.getWorldPosition(pos);
+            const dir = new THREE.Vector3().subVectors(pos, spaceship.position).normalize();
+            best = { planet: closest, dir };
+          }
+        }
+        if (best && best.planet) {
+          const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,-1), best.dir);
+          spaceship.quaternion.copy(q);
+          const targetYaw = Math.atan2(best.dir.x, -best.dir.z);
+          yaw = targetYaw;
+          spaceship.rotation.y = yaw;
+          spaceship.userData.targetPlanet = best.planet;
+        }
+      }
     }
     
   } catch (error) {
@@ -685,7 +787,9 @@ async function setupLoadersAndLoadModels() {
 window.runSmokeTests = async function() {
   const results = [];
   const errorCount = { value: 0 };
+  // eslint-disable-next-line no-console
   const originalError = console.error;
+  // eslint-disable-next-line no-console
   console.error = function(...args){ errorCount.value++; originalError.apply(console, args); };
 
   try {
@@ -704,10 +808,6 @@ window.runSmokeTests = async function() {
       setTimeout(() => { window.tourManager.skip(); }, 500);
       results.push(true);
     }
-    if (window.i18nManager) {
-      await window.i18nManager.changeLanguage('en');
-      results.push(true);
-    }
     // Quick flight to first planet
     if (PLANETS.length) {
       flyToPlanetWithSpaceship(PLANETS[0]);
@@ -724,6 +824,7 @@ window.runSmokeTests = async function() {
   } catch {
     results.push(false);
   } finally {
+    // eslint-disable-next-line no-console
     console.error = originalError;
   }
   const ok = results.every(Boolean) && errorCount.value === 0;
@@ -732,7 +833,9 @@ window.runSmokeTests = async function() {
 
 window.runGuidedTourTests = async function() {
   const result = { ui: false, next: false, pauseResume: false, stop: false, errors: 0 };
+  // eslint-disable-next-line no-console
   const originalError = console.error;
+  // eslint-disable-next-line no-console
   console.error = function(...args){ result.errors++; originalError.apply(console, args); };
   try {
     const uiElems = [
@@ -754,7 +857,8 @@ window.runGuidedTourTests = async function() {
       setTimeout(() => { document.getElementById('tour-stop')?.click(); }, 600);
       result.stop = true;
     }
-  } catch {}
+  } catch (e) { /* ignore */ }
+  // eslint-disable-next-line no-console
   console.error = originalError;
   return result;
 }
@@ -883,9 +987,10 @@ function flyToPlanetWithSpaceship(planetEntry) {
   const size = new THREE.Vector3();
   planetEntry.bbox.getSize(size);
   const radiusApprox = Math.max(size.x, size.y, size.z) * 0.6;
-  const dir = new THREE.Vector3().subVectors(camera.position, targetWorld).normalize();
-  
-  flightTarget.copy(targetWorld).add(dir.multiplyScalar(radiusApprox + 6));
+  const dir = new THREE.Vector3().subVectors(spaceship.position, targetWorld).normalize();
+  const approachPadding = 10;
+  flightTarget.copy(targetWorld).add(dir.multiplyScalar(radiusApprox + approachPadding));
+
   // Face the planet direction immediately for responsiveness
   const faceDir = new THREE.Vector3().subVectors(targetWorld, spaceship.position).normalize();
   const initialQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), faceDir);
@@ -906,6 +1011,8 @@ function animate() {
     let dt = clock.getDelta();
     if (!Number.isFinite(dt) || dt <= 0) dt = 0.016;
     dt = Math.min(dt, 0.05);
+
+    vfxFrameCounter++;
 
     // Manual spaceship control
     if (isManualControl && spaceship) {
@@ -959,22 +1066,18 @@ function animate() {
         }
       }
       
-      // Camera follow (or cockpit view)
+      // Camera follow - third-person style with mouse look and zoom
       if (cockpitManager && !cockpitManager.isInsideCockpit) {
-        const cameraDistance = 10;
-        const cameraHeight = 3;
-        const cameraOffset = new THREE.Vector3(0, cameraHeight, cameraDistance);
-        
-        const pitchRotation = new THREE.Euler(pitch, 0, 0, 'YXZ');
-        cameraOffset.applyEuler(pitchRotation);
-        cameraOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-        
-        const desiredCam = new THREE.Vector3().copy(spaceship.position).add(cameraOffset);
-        camera.position.lerp(desiredCam, CONFIG.PERFORMANCE.CAMERA_FOLLOW_SPEED);
-        
-        const lookTarget = new THREE.Vector3().copy(spaceship.position);
-        lookTarget.y += Math.sin(pitch) * 2;
-        camera.lookAt(lookTarget);
+        // Calculate camera position using spherical coordinates
+        const cameraX = spaceship.position.x + cameraDistance * Math.sin(cameraYaw) * Math.cos(cameraPitch);
+        const cameraY = spaceship.position.y + cameraDistance * Math.sin(cameraPitch);
+        const cameraZ = spaceship.position.z + cameraDistance * Math.cos(cameraYaw) * Math.cos(cameraPitch);
+
+        // Smooth camera movement
+        camera.position.lerp(new THREE.Vector3(cameraX, cameraY, cameraZ), CONFIG.PERFORMANCE.CAMERA_FOLLOW_SPEED * 2);
+
+        // Look at the spaceship
+        camera.lookAt(spaceship.position);
       }
       
       // Auto-approach
@@ -993,13 +1096,13 @@ function animate() {
           const targetQuaternion = new THREE.Quaternion();
           targetQuaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), direction);
           const currentYaw = yaw;
-          const targetYaw = Math.atan2(direction.x, direction.z);
+          const targetYaw = Math.atan2(direction.x, -direction.z);
           yaw = currentYaw + (targetYaw - currentYaw) * 0.05;
           spaceship.rotation.y = yaw;
         }
       }
       
-      if (vfxManager) {
+      if (vfxManager && vfxFrameCounter % 2 === 0) {
         vfxManager.update(spaceship, currentVelocity);
       }
       
@@ -1024,7 +1127,9 @@ function animate() {
     
     // Spaceship flight movement (auto-pilot)
   if (isFlying && spaceship && !isManualControl) {
-      spaceship.position.lerp(flightTarget, Math.min(1, 0.06));
+      const distanceToTarget = spaceship.position.distanceTo(flightTarget);
+
+      spaceship.position.lerp(flightTarget, Math.min(1, 0.08));
       
       const tp = spaceship.userData.targetPlanet;
       if (tp) {
@@ -1036,27 +1141,49 @@ function animate() {
         spaceship.quaternion.slerp(targetQuaternion, 0.1);
       }
       
-      if (spaceship.position.distanceTo(flightTarget) < 0.6) {
+      if (tp) {
+        const size = new THREE.Vector3();
+        tp.bbox.getSize(size);
+        const radiusApprox = Math.max(size.x, size.y, size.z) * 0.6;
+        const arrivalTol = Math.max(1.5, radiusApprox * 0.25);
+        if (distanceToTarget < arrivalTol) {
+          isFlying = false;
+          isManualControl = false; // Switch to OrbitControls mode for planet viewing
+          controls.enabled = true;
+          const arrivedPlanet = spaceship.userData.targetPlanet;
+          if (arrivedPlanet) openPlanetPanel(arrivedPlanet);
+        }
+      } else if (distanceToTarget < 1.5) {
         isFlying = false;
+        isManualControl = false; // Switch to OrbitControls mode for planet viewing
         controls.enabled = true;
         const arrivedPlanet = spaceship.userData.targetPlanet;
-        if (arrivedPlanet) openPlanetPanel(arrivedPlanet);
+        if (arrivedPlanet && !pathModeEnabled) openPlanetPanel(arrivedPlanet);
       }
     }
 
-    // Camera follow during flight
+    // Camera follow during flight - racing game style
     if (isFlying && spaceship) {
-      const behind = new THREE.Vector3(0, 4, 12).applyQuaternion(spaceship.quaternion);
-      const desiredCam = new THREE.Vector3().copy(spaceship.position).add(behind);
+      const distanceToTarget = spaceship.position.distanceTo(flightTarget);
+      const baseDist = 10;
+      const baseHeight = 5;
+      const nearDist = 6;
+      const nearHeight = 3;
+      const t = Math.max(0, Math.min(1, distanceToTarget / 20));
+      const cameraDistance = nearDist + (baseDist - nearDist) * t;
+      const cameraHeight = nearHeight + (baseHeight - nearHeight) * t;
+      const cameraSideOffset = 2;
+      
+      const cameraOffset = new THREE.Vector3(cameraSideOffset, cameraHeight, cameraDistance);
+      cameraOffset.applyQuaternion(spaceship.quaternion);
+      
+      const desiredCam = new THREE.Vector3().copy(spaceship.position).add(cameraOffset);
       camera.position.lerp(desiredCam, 0.12);
       
-      const lookAtTarget = new THREE.Vector3();
-      if (spaceship.userData.targetPlanet) {
-        spaceship.userData.targetPlanet.mesh.getWorldPosition(lookAtTarget);
-      } else {
-        lookAtTarget.copy(spaceship.position);
-      }
-      camera.lookAt(lookAtTarget);
+      // Look ahead of the spaceship for better flight feel
+      const lookAhead = new THREE.Vector3(0, 0, -20).applyQuaternion(spaceship.quaternion);
+      const lookTarget = new THREE.Vector3().copy(spaceship.position).add(lookAhead);
+      camera.lookAt(lookTarget);
     }
     else {
       controls.update();
@@ -1105,13 +1232,13 @@ function createPlanetPanelUI() {
   const panel = document.getElementById('planet-panel');
   panel.innerHTML = `
     <button id="planet-close" style="float:right;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0;width:30px;height:30px;">✕</button>
-    <h3 id="planet-title" style="margin-top:0" data-i18n="planets.name">Planet</h3>
+    <h3 id="planet-title" style="margin-top:0">Planet</h3>
     <img id="planet-img" src="" style="width:100%;display:none;border-radius:6px;margin-top:8px" />
     
     <div id="planet-tabs" style="display:flex;gap:4px;margin-top:12px;border-bottom:1px solid rgba(255,255,255,0.1);">
-      <button class="planet-tab active" data-tab="info" style="flex:1;padding:8px;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer;border-radius:4px 4px 0 0;" data-i18n="ui.tabs.info">User Info</button>
-      <button class="planet-tab" data-tab="projects" style="flex:1;padding:8px;background:transparent;border:none;color:#aaa;cursor:pointer;" data-i18n="ui.tabs.projects">Projects</button>
-      <button class="planet-tab" data-tab="contact" style="flex:1;padding:8px;background:transparent;border:none;color:#aaa;cursor:pointer;" data-i18n="ui.tabs.contact">Contact</button>
+      <button class="planet-tab active" data-tab="info" style="flex:1;padding:8px;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer;border-radius:4px 4px 0 0;">User Info</button>
+      <button class="planet-tab" data-tab="projects" style="flex:1;padding:8px;background:transparent;border:none;color:#aaa;cursor:pointer;">Projects</button>
+      <button class="planet-tab" data-tab="contact" style="flex:1;padding:8px;background:transparent;border:none;color:#aaa;cursor:pointer;">Contact</button>
     </div>
     
     <div id="planet-tab-content" style="margin-top:12px;min-height:200px;">
@@ -1131,8 +1258,8 @@ function createPlanetPanelUI() {
     </div>
     
     <div style="margin-top:16px;display:flex;gap:8px;">
-      <button id="planet-back" style="flex:1;padding:8px;background:rgba(255,255,255,0.1);border:none;color:#fff;border-radius:6px;cursor:pointer;" data-i18n="ui.close">Close</button>
-      <button id="planet-travel" style="flex:1;padding:8px;background:#06b6d4;border:none;color:#fff;border-radius:6px;cursor:pointer;" data-i18n="ui.travelHere">Travel Here</button>
+      <button id="planet-back" style="flex:1;padding:8px;background:rgba(255,255,255,0.1);border:none;color:#fff;border-radius:6px;cursor:pointer;">Close</button>
+      <button id="planet-travel" style="flex:1;padding:8px;background:#06b6d4;border:none;color:#fff;border-radius:6px;cursor:pointer;">Travel Here</button>
     </div>
   `;
   
@@ -1478,7 +1605,7 @@ function applyShipChange(newShip) {
   if (!newShip) return;
   // Remove previous ship from scene if different
   if (spaceship && spaceship !== newShip) {
-    try { scene.remove(spaceship); } catch {}
+    try { scene.remove(spaceship); } catch (e) { /* ignore */ }
   }
   // Set and tag
   spaceship = newShip;
@@ -1486,110 +1613,101 @@ function applyShipChange(newShip) {
   // Ensure visible
   spaceship.visible = true;
   if (!scene.children.includes(spaceship)) {
-    try { scene.add(spaceship); } catch {}
+    try { scene.add(spaceship); } catch (e) { /* ignore */ }
   }
   // Re-init VFX trails on the new ship
   if (vfxManager) {
-    try { vfxManager.init(spaceship); } catch {}
+    try { vfxManager.init(spaceship); } catch (e) { /* ignore */ }
   }
   // Update cockpit binding
   if (cockpitManager) {
     cockpitManager.spaceship = spaceship;
   }
 }
-async function flyAllPlanetsSequential() {
-  const order = PLANETS.slice();
-  for (const p of order) {
-    flyToPlanetWithSpaceship(p);
-    // Wait until arrival or timeout
-    const start = Date.now();
-    while (true) {
-      const arrived = !isFlying;
-      if (arrived) break;
-      if (Date.now() - start > 15000) break; // 15s timeout
-      await new Promise(r => setTimeout(r, 150));
-    }
-    await new Promise(r => setTimeout(r, 500));
-  }
-}
 
-window.addEventListener('keydown', (e) => {
-  if (e.shiftKey && e.key.toLowerCase() === 'g') {
-    flyAllPlanetsSequential();
-  }
-});
+
+
   // Expose fly helper for guided tour
   window.flyToPlanetWithSpaceship = flyToPlanetWithSpaceship;
+  
+  // Add function to restart audio with melodic sounds
+  window.restartMelodicAudio = () => {
+    if (window.audioManager) {
+      window.audioManager.stopAllAudio();
+      window.audioManager.init().then(() => {
+      });
+    } else {
+      loadModule('js/audio/proceduralMusic.js').then(module => {
+        if (module && typeof module === 'function') {
+          window.audioManager = new module();
+          window.audioManager.init().then(() => {
+          });
+        }
+      });
+    }
+  };
+
+  // Quick test function for melodic audio
+  window.testMelodicAudio = () => {
+    if (window.audioManager && window.audioManager.mainAmbient) {
+      const oscillators = window.audioManager.mainAmbient.oscillators;
+      if (oscillators && oscillators.length > 0) {
+        /* do nothing */
+      }
+    } else {
+      window.restartMelodicAudio();
+    }
+  };
 
   // Create checkpoint UI
   createCheckpointUI();
-  createPerformanceUI();
+  
+  // Create audio volume control
+  createAudioControl();
 function createCheckpointUI() {
   const container = document.createElement('div');
   container.style.cssText = 'position:fixed;top:20px;left:160px;z-index:1600;display:flex;gap:8px;';
-  const setBtn = document.createElement('button');
-  setBtn.textContent = 'Set Checkpoint';
-  setBtn.style.cssText = 'padding:8px;background:#0891b2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
   const returnBtn = document.createElement('button');
   returnBtn.textContent = 'Return to Checkpoint';
   returnBtn.style.cssText = 'padding:8px;background:#06b6d4;color:#001;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
-  const pathToggle = document.createElement('button');
-  pathToggle.textContent = 'Path Mode';
-  pathToggle.style.cssText = 'padding:8px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
-  const nextBtn = document.createElement('button');
-  nextBtn.textContent = 'Next Planet';
-  nextBtn.style.cssText = 'padding:8px;background:#10b981;color:#001;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
 
-  setBtn.onclick = () => setCheckpoint();
   returnBtn.onclick = () => returnToCheckpoint();
-  pathToggle.onclick = () => { pathModeEnabled = !pathModeEnabled; pathToggle.textContent = pathModeEnabled ? 'Path Mode: On' : 'Path Mode'; if (pathModeEnabled) { pathIndex = 0; } };
-  nextBtn.onclick = () => { if (pathModeEnabled && PLANETS.length && !isFlying) { const p = PLANETS[pathIndex % PLANETS.length]; pathIndex++; isManualControl = false; flyToPlanetWithSpaceship(p); } };
 
-  container.appendChild(setBtn);
   container.appendChild(returnBtn);
-  container.appendChild(pathToggle);
-  container.appendChild(nextBtn);
   document.body.appendChild(container);
-}
 
-function createPerformanceUI() {
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;top:20px;left:360px;z-index:1600;display:flex;gap:8px;align-items:center;';
-  const toggle = document.createElement('button');
-  toggle.textContent = 'Performance Mode';
-  toggle.style.cssText = 'padding:8px;background:#334155;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;';
-  const fps = document.createElement('div');
-  fps.style.cssText = 'padding:6px 10px;background:#0f172a;color:#a7f3d0;border:1px solid #22d3ee;border-radius:6px;font-size:12px;';
-  fps.textContent = 'FPS: --';
-  toggle.onclick = () => {
-    performanceMode = !performanceMode;
-    if (performanceMode) {
-      renderer.shadowMap.enabled = false;
-      renderer.setPixelRatio(1);
-      if (currentShaderBackground) { try { currentShaderBackground.stop(); } catch {} }
-    } else {
-      renderer.shadowMap.enabled = CONFIG.PERFORMANCE.ENABLE_SHADOWS;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, CONFIG.PERFORMANCE.PIXEL_RATIO_LIMIT));
+  // Add camera controls hint
+  const controlsHint = document.createElement('div');
+  controlsHint.id = 'controls-hint';
+  controlsHint.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: monospace;
+    z-index: 1500;
+    max-width: 200px;
+    line-height: 1.4;
+  `;
+  controlsHint.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 5px;">Camera Controls:</div>
+    <div>🖱️ Right-click + drag: Look around</div>
+    <div>🔍 Mouse wheel: Zoom in/out</div>
+    <div>👆 Left-click + drag: Steer ship</div>
+  `;
+  document.body.appendChild(controlsHint);
+
+  // Hide hint after 10 seconds
+  setTimeout(() => {
+    if (controlsHint) {
+      controlsHint.style.opacity = '0';
+      setTimeout(() => controlsHint.remove(), 1000);
     }
-  };
-  container.appendChild(toggle);
-  container.appendChild(fps);
-  document.body.appendChild(container);
-  fpsElement = fps;
-}
-
-function setCheckpoint() {
-  if (!spaceship) return;
-  checkpoint = {
-    position: spaceship.position.clone(),
-    quaternion: spaceship.quaternion.clone(),
-  };
-  try {
-    localStorage.setItem('checkpoint', JSON.stringify({
-      position: { x: checkpoint.position.x, y: checkpoint.position.y, z: checkpoint.position.z },
-      quaternion: { x: checkpoint.quaternion.x, y: checkpoint.quaternion.y, z: checkpoint.quaternion.z, w: checkpoint.quaternion.w }
-    }));
-  } catch {}
+  }, 10000);
 }
 
 function returnToCheckpoint() {
@@ -1597,7 +1715,7 @@ function returnToCheckpoint() {
   try {
     const raw = localStorage.getItem('checkpoint');
     if (raw) data = JSON.parse(raw);
-  } catch {}
+  } catch (e) { /* ignore */ }
   if (!checkpoint && data && spaceship) {
     checkpoint = {
       position: new THREE.Vector3(data.position.x, data.position.y, data.position.z),
@@ -1607,13 +1725,55 @@ function returnToCheckpoint() {
   if (checkpoint && spaceship) {
     isFlying = false;
     isManualControl = true;
-    controls.enabled = true;
+    controls.enabled = false; // Game mode: manual control, OrbitControls disabled
     spaceship.position.copy(checkpoint.position);
     spaceship.quaternion.copy(checkpoint.quaternion);
     const behind = new THREE.Vector3(0, 3, 10).applyQuaternion(spaceship.quaternion);
     const desiredCam = new THREE.Vector3().copy(spaceship.position).add(behind);
     camera.position.copy(desiredCam);
     camera.lookAt(spaceship.position);
-    controls.update();
+    // Note: controls.update() not needed when controls are disabled
   }
+}
+
+function createAudioControl() {
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:1600;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.7);padding:8px;border-radius:8px;';
+  
+  const label = document.createElement('span');
+  label.textContent = '🔊';
+  label.style.cssText = 'color:#fff;font-size:14px;';
+  
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = '0';
+  slider.max = '100';
+  slider.value = '30'; // Start at 30% volume
+  slider.style.cssText = 'width:80px;height:4px;';
+  
+  const volumeText = document.createElement('span');
+  volumeText.textContent = '30%';
+  volumeText.style.cssText = 'color:#fff;font-size:12px;min-width:30px;';
+  
+  slider.oninput = (e) => {
+    const volume = e.target.value;
+    volumeText.textContent = volume + '%';
+    
+    // Update audio volume if audio manager exists
+    if (window.audioManager && window.audioManager.mainAmbient) {
+      const gainNodes = window.audioManager.mainAmbient.gains;
+      if (gainNodes && gainNodes.length > 0) {
+        const volumeMultiplier = volume / 100;
+        gainNodes.forEach((gain, index) => {
+          const baseVolume = [0.02, 0.015, 0.01][index] || 0.01;
+          gain.gain.value = baseVolume * volumeMultiplier;
+        });
+      }
+    }
+  };
+  
+  container.appendChild(label);
+  container.appendChild(slider);
+  container.appendChild(volumeText);
+  document.body.appendChild(container);
 }
