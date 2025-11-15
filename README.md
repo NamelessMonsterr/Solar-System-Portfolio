@@ -5,17 +5,17 @@
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Three.js](https://img.shields.io/badge/Three.js-r155-orange.svg)
-![Status](https://img.shields.io/badge/status-production--ready-success.svg)
+![Status](https://img.shields.io/badge/status-stable-success.svg)
 
 **An immersive 3D game-based portfolio website with AI, spatial audio, and advanced features**
 
-[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Demo](#-demo)
+[Features](#-features) • [Quick Start](#-quick-start) • [Configuration](#-configuration) • [Fixes & Stability](#-fixes--stability)
 
 </div>
 
 ---
 
-## ✨ What's New in v2.0
+## ✨ Features
 
 ### 🎵 **Procedural Spatial Audio System**
 - Unique music for each planet generated in real-time
@@ -67,49 +67,44 @@
 
 ### 🎮 **Easter Eggs & Secrets**
 - Hidden Planet X to discover
-- Konami code for hyperspeed
+- Enter Konami code for hyperspeed
 - Secret console commands
 - Achievement system
 
 ---
 
+## 🛠️ Fixes & Stability
+
+This section details the recent critical fixes and code quality improvements implemented to ensure the project's stability and maintainability.
+
+| Category | Description | Status |
+| :--- | :--- | :--- |
+| **Critical Bugs** | Missing Three.js import, premature global variable export, and logical errors in spaceship key handling have been resolved. | **Fixed** |
+| **Code Quality** | Refactored the planet information panel to use external CSS classes instead of inline styles, and replaced silent error handling with console warnings. | **Improved** |
+| **Performance** | Removed the hardcoded delta time cap in the animation loop for more consistent frame-rate independent performance. | **Improved** |
+
+---
+
 ## 📁 Project Structure
 
+```
 Portfolio-Website/
-├── index.html # Main HTML entry point
+├── index.html          # Main HTML entry point
 ├── js/
-│ ├── main.js # Core application (integrated)
+│ ├── main.js           # Core application (integrated)
 │ ├── utils/
-│ │ └── config.js # Configuration settings
+│ │ └── config.js       # Configuration settings
 │ ├── audio/
-│ │ └── proceduralMusic.js # Spatial audio system
 │ ├── graphics/
-│ │ ├── shaderBackgrounds.js # WebGL shaders
-│ │ └── cockpitView.js # First-person view
 │ └── features/
-│ ├── chatbot.js # AI guide
-│ ├── guidedTour.js # Tour system
-│ ├── i18n.js # Internationalization
-│ ├── spaceshipSelector.js # Ship switching
-│ ├── analytics.js # Analytics tracking
-│ └── easterEggs.js # Hidden features
 ├── resources/
 │ ├── solar_system_real_scale_2k_textures.glb
 │ ├── spaceships/
-│ │ ├── spaceship.glb
-│ │ ├── fighter.glb # Optional
-│ │ └── cruiser.glb # Optional
 │ └── locales/
-│ ├── en.json
-│ ├── es.json
-│ ├── fr.json
-│ └── hi.json
-├── project_map.json # Content configuration
-├── README.md # This file
-├── CHANGELOG.md # Version history
-└── TESTING_GUIDE.md # Testing procedures
-
-text
+├── project_map.json    # Content configuration (Crucial for your portfolio)
+├── README.md           # This file
+└── ...
+```
 
 ---
 
@@ -140,283 +135,89 @@ text
 ## 🚀 Quick Start
 
 ### 1. Clone Repository
-git clone https://github.com/NamelessMonsterr/Portfolio-Website.git
-cd Portfolio-Website
+```bash
+git clone https://github.com/NamelessMonsterr/Solar-System-Portfolio.git
+cd Solar-System-Portfolio
+```
 
-text
+### 2. Install Dependencies
+This project uses ES Modules and Three.js. Ensure you have a modern browser or a local server that supports ES Modules.
 
-### 2. Add Required Assets
-
-Place these files in `resources/`:
+### 3. Add Required Assets
+Place your 3D models in the `resources/` directory:
 - `solar_system_real_scale_2k_textures.glb` (required)
 - `spaceship.glb` (required)
-- `project_map.json` (optional - auto-generated if missing)
 
-**Optional spaceships** (for selector feature):
-- `resources/spaceships/fighter.glb`
-- `resources/spaceships/cruiser.glb`
+### 4. Start Local Server
+You need a local web server to run the project due to browser security restrictions on loading local files (CORS).
 
-### 3. Start Local Server
-Python 3
+```bash
+# Python 3
 python -m http.server 8000
 
-Node.js
+# Node.js
 npx serve .
+```
 
-PHP
-php -S localhost:8000
-
-text
-
-### 4. Open in Browser
-http://localhost:8000
-
-text
+### 5. Open in Browser
+Open your browser and navigate to `http://localhost:8000`.
 
 ---
 
-## 🎨 Customization
+## ⚙️ Configuration (Action Required)
 
-### Configure Features
+To make this a functional portfolio, you **must** update the following files:
 
-Edit `js/utils/config.js`:
+### 1. Personalize Content (`project_map.json`)
 
-export const CONFIG = {
-SPACESHIP: {
-SPEED: 0.6, // Adjust flight speed
-ROTATION_SPEED: 0.05, // Rotation sensitivity
-MODELS: [/* add your ships */]
-},
+This file maps content to the planets. You must replace all placeholder data.
 
-CHATBOT: {
-ENABLED: true, // Enable/disable chatbot
-PLANET_KNOWLEDGE: {/* ... */}
-},
+```json
+{
+  "Earth": {
+    "title": "About Me",
+    "short": "Brief introduction",
+    "long": "Detailed biography...",
+    "projects": [
+      {
+        "name": "Project Name",
+        "description": "What it does",
+        "tech": "Technologies used",
+        "link": "https://github.com/username/project"
+      }
+    ],
+    "contact": {
+      "email": "your@email.com",
+      "phone": "+1234567890",
+      "location": "Your City"
+    },
+    "links": [
+      {"label": "GitHub", "url": "https://github.com/username"},
+      {"label": "LinkedIn", "url": "https://linkedin.com/in/username"}
+    ]
+  }
+  // ... and other planets
+}
+```
 
-GUIDED_TOUR: {
-ENABLED: true, // Enable/disable tour
-SPEED: 0.3,
-PAUSE_DURATION: 5000
-},
+### 2. Configure Analytics (`js/utils/config.js`)
 
-I18N: {
-DEFAULT_LANGUAGE: 'en',
-SUPPORTED_LANGUAGES: ['en', 'es', 'fr', 'hi']
-},
+If you want to track visitors, update your Google Analytics ID.
+
+```javascript
+// js/utils/config.js
 
 ANALYTICS: {
-ENABLED: true,
-GA_ID: 'G-XXXXXXXXXX' // Your Google Analytics ID
+  ENABLED: true,
+  GA_ID: 'G-XXXXXXXXXX' // <-- REPLACE with your Google Analytics ID
 },
-
-EASTER_EGGS: {
-ENABLED: true
-}
-};
-
-text
-
-### Add Your Content
-
-Edit `project_map.json`:
-
-{
-"Earth": {
-"title": "About Me",
-"short": "Brief introduction",
-"long": "Detailed biography...",
-"image": "https://example.com/image.jpg",
-"projects": [
-{
-"name": "Project Name",
-"description": "What it does",
-"tech": "Technologies used",
-"link": "https://github.com/username/project"
-}
-],
-"contact": {
-"email": "your@email.com",
-"phone": "+1234567890",
-"location": "Your City"
-},
-"links": [
-{"label": "GitHub", "url": "https://github.com/username"},
-{"label": "LinkedIn", "url": "https://linkedin.com/in/username"}
-]
-}
-}
-
-text
-
----
-
-## 🌍 Adding Languages
-
-Create `resources/locales/[language].json`:
-
-{
-"meta": {
-"title": "Your Portfolio Title",
-"description": "Description"
-},
-"controls": {
-"title": "Controls Title",
-"wasd": "Move",
-"drag": "Look Around"
-},
-"ui": {
-"gameMode": "Game Mode",
-"close": "Close"
-}
-}
-
-text
-
-Then add to `config.js`:
-I18N: {
-SUPPORTED_LANGUAGES: ['en', 'es', 'fr', 'hi', 'your-lang']
-}
-
-text
-
----
-
-## 📊 Analytics Setup
-
-### Google Analytics
-
-1. Get your GA4 Measurement ID from [analytics.google.com](https://analytics.google.com)
-2. Add to `config.js`:
-ANALYTICS: {
-ENABLED: true,
-GA_ID: 'G-XXXXXXXXXX' // Your ID here
-}
-
-text
-
-### Custom Events Tracked
-- `session_start` / `session_end`
-- `planet_visit` (with planet name)
-- `tour_start` / `tour_complete`
-- `ship_change` (with ship ID)
-- `easter_egg` (with type)
-
----
-
-## 🚀 Deployment
-
-### Netlify (Recommended)
-Drag folder to netlify.com/drop
-Or use CLI:
-npm install -g netlify-cli
-netlify deploy --prod
-
-text
-
-### Vercel
-npm i -g vercel
-vercel --prod
-
-text
-
-### GitHub Pages
-1. Push to GitHub
-2. Settings → Pages → Select branch
-3. Site live at `username.github.io/Portfolio-Website`
-
----
-
-## 🧪 Testing
-
-Run automated tests:
-// Paste in browser console:
-(async function() {
-console.log('🧪 Testing features...');
-console.log('✓ Audio:', !!window.audioManager);
-console.log('✓ Chatbot:', !!window.chatbot);
-console.log('✓ Tour:', !!window.tourManager);
-console.log('✓ i18n:', !!window.i18nManager);
-console.log('✓ Spaceship:', !!window.spaceship);
-console.log('✓ Planets:', window.PLANETS?.length || 0);
-console.log('✅ All systems operational!');
-})();
-
-text
-
-See [TESTING_GUIDE.md](TESTING_GUIDE.md) for comprehensive testing procedures.
-
----
-
-## 🎁 Easter Eggs
-
-Try these:
-- Fly far out to coordinates [1000, 0, 1000] to find Planet X
-- Enter Konami code: ↑↑↓↓←→←→BA
-- Type `revealSecrets()` in console
-- Check console for hidden messages
-
----
-
-## 📈 Performance
-
-### Desktop
-- 60 FPS @ 1080p
-- ~80-120MB RAM usage
-- <3s load time
-
-### Mobile
-- 30-45 FPS
-- ~60-80MB RAM usage
-- <5s load time
-
-### Optimizations
-- LOD system for distant objects
-- Procedural audio (no file loading)
-- WebGL shaders (no video files)
-- Optimized update loops
-- Frame-rate independent physics
-
----
-
-## 🆘 Troubleshooting
-
-**Audio not playing?**
-- Click anywhere on page first (browser autoplay policy)
-
-**Cockpit view not working?**
-- Press C key to toggle
-- Ensure spaceship is loaded
-
-**Language not changing?**
-- Check `resources/locales/[lang].json` exists
-- Refresh page and clear cache
-
-**Performance issues?**
-- Reduce `PARTICLE_UPDATE_INTERVAL` in config
-- Disable shadows: `ENABLE_SHADOWS: false`
-- Lower `PIXEL_RATIO_LIMIT` to 1.0
-
----
-
-## 📄 License
-
-MIT License - feel free to use for personal or commercial projects!
-
----
-
-## 🙏 Credits
-
-- **Three.js** - 3D graphics library
-- **NASA** - Planetary imagery inspiration
-- **Web Audio API** - Spatial sound
-- **WebGL** - Shader rendering
+```
 
 ---
 
 ## 📞 Support
 
-- 🐛 [Report Issues](https://github.com/NamelessMonsterr/Portfolio-Website/issues)
-- 💬 [Discussions](https://github.com/NamelessMonsterr/Portfolio-Website/discussions)
+- 🐛 [Report Issues](https://github.com/NamelessMonsterr/Solar-System-Portfolio/issues)
 - ⭐ Star the repo if helpful!
 
 ---
@@ -425,7 +226,7 @@ MIT License - feel free to use for personal or commercial projects!
 
 **Built with ❤️ for space exploration and innovation**
 
-**Version 2.0.0** | Production Ready | November 2025
+**Version 2.0.0** | Stable | November 2025
 
 🚀 **Happy Exploring!** 🌌
 
