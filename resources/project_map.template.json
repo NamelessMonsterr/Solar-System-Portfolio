@@ -1,0 +1,183 @@
+{
+  "__README__": "This is a template file. Copy this to project_map.json and customize with your real content.",
+
+  "Mercury": {
+    "title": "Your Name — Quick Start Project",
+    "short": "A brief, catchy one-line description of this project (1-2 sentences max)",
+    "long": "A more detailed description of this project. Explain what you built, what technologies you used, what problems you solved, and what you learned. Keep it professional but engaging.",
+    "image": "https://your-image-url.com/project-screenshot.jpg",
+    "projects": [
+      {
+        "name": "Sub-project or Feature Name",
+        "description": "What this specific feature or component does",
+        "tech": "React, Node.js, MongoDB, Docker",
+        "link": "https://github.com/yourusername/project-name"
+      }
+    ],
+    "contact": {
+      "email": "your.email@example.com",
+      "phone": "+1 (555) 123-4567",
+      "location": "San Francisco, CA, USA"
+    },
+    "links": [
+      { "label": "GitHub", "url": "https://github.com/yourusername" },
+      { "label": "Live Demo", "url": "https://your-demo-url.com" },
+      { "label": "Documentation", "url": "https://docs-url.com" }
+    ]
+  },
+
+  "Venus": {
+    "title": "Venus — Creative Design Project",
+    "short": "UI/UX design project showcasing modern web design principles",
+    "long": "Description of your design-focused project. Talk about the design process, user research, prototyping, and final implementation.",
+    "image": "https://placehold.co/800x600/8b5cf6/ffffff?text=Venus+Project",
+    "projects": [
+      {
+        "name": "Design System",
+        "description": "Custom design system with reusable components",
+        "tech": "Figma, Storybook, Tailwind CSS",
+        "link": "https://github.com/yourusername/design-system"
+      }
+    ],
+    "links": [
+      { "label": "Case Study", "url": "https://your-case-study.com" },
+      { "label": "Figma Prototype", "url": "https://figma.com/..." }
+    ]
+  },
+
+  "Earth": {
+    "title": "Your Full Name — Portfolio Hub",
+    "short": "Full-stack developer passionate about creating innovative web experiences",
+    "long": "This is your main introduction. Write about yourself: your background, your passion for technology, your key skills, and what drives you as a developer. Make it personal and authentic. Example: 'I'm a full-stack developer with 5+ years of experience building scalable web applications. I specialize in React, Node.js, and cloud architecture. I'm passionate about creating user-centered experiences that solve real problems.'",
+    "image": "https://your-professional-photo.com/headshot.jpg",
+    "projects": [
+      {
+        "name": "E-commerce Platform",
+        "description": "Full-stack e-commerce solution with payment integration",
+        "tech": "Next.js, Stripe, PostgreSQL, AWS",
+        "link": "https://github.com/yourusername/ecommerce"
+      },
+      {
+        "name": "Real-time Chat App",
+        "description": "WebSocket-based chat application with rooms and DMs",
+        "tech": "Socket.io, React, Redis, Docker",
+        "link": "https://github.com/yourusername/chat-app"
+      },
+      {
+        "name": "AI Content Generator",
+        "description": "Machine learning powered content creation tool",
+        "tech": "Python, TensorFlow, FastAPI, React",
+        "link": "https://github.com/yourusername/ai-content"
+      }
+    ],
+    "contact": {
+      "email": "yourname@example.com",
+      "phone": "+1 (555) 987-6543",
+      "location": "New York, NY, USA"
+    },
+    "links": [
+      { "label": "GitHub", "url": "https://github.com/yourusername" },
+      { "label": "LinkedIn", "url": "https://linkedin.com/in/yourusername" },
+      { "label": "Twitter", "url": "https://twitter.com/yourusername" },
+      {
+        "label": "Resume (PDF)",
+        "url": "https://your-resume-url.com/resume.pdf"
+      },
+      { "label": "Personal Website", "url": "https://yourwebsite.com" }
+    ]
+  },
+
+  "Mars": {
+    "title": "Mars — Technical Innovation Project",
+    "short": "Cutting-edge technical project pushing the boundaries of web development",
+    "long": "Describe your most technically challenging project. What problem did it solve? What innovative approaches did you take? What technologies did you experiment with? What did you learn from the challenges?",
+    "image": "https://placehold.co/800x600/ef4444/ffffff?text=Mars+Innovation",
+    "projects": [
+      {
+        "name": "Distributed System",
+        "description": "Microservices architecture with event-driven design",
+        "tech": "Kubernetes, RabbitMQ, Go, GraphQL",
+        "link": "https://github.com/yourusername/distributed-system"
+      }
+    ],
+    "links": [
+      { "label": "Technical Blog Post", "url": "https://your-blog.com/post" },
+      { "label": "Architecture Diagram", "url": "https://your-diagrams.com" }
+    ]
+  },
+
+  "Jupiter": {
+    "title": "Jupiter — Large-Scale Project",
+    "short": "Massive project showcasing enterprise-level development skills",
+    "long": "Your biggest, most complex project. Talk about scale, team collaboration, architecture decisions, deployment strategies, and the impact it had. Show your ability to handle large codebases and complex systems.",
+    "image": "https://placehold.co/800x600/f59e0b/ffffff?text=Jupiter+Scale",
+    "projects": [
+      {
+        "name": "Enterprise SaaS Platform",
+        "description": "Multi-tenant SaaS with advanced analytics and reporting",
+        "tech": "React, Node.js, PostgreSQL, Redis, AWS",
+        "link": "https://github.com/yourusername/saas-platform"
+      },
+      {
+        "name": "Admin Dashboard",
+        "description": "Real-time monitoring and management dashboard",
+        "tech": "React, D3.js, WebSockets, Python",
+        "link": "https://github.com/yourusername/admin-dashboard"
+      }
+    ],
+    "contact": {
+      "email": "enterprise@example.com"
+    },
+    "links": [
+      { "label": "Live Platform", "url": "https://platform-demo.com" },
+      { "label": "Case Study", "url": "https://case-study.com" }
+    ]
+  },
+
+  "Saturn": {
+    "title": "Saturn — Creative/Experimental Project",
+    "short": "Experimental project showcasing creativity and artistic coding",
+    "long": "Your most creative or experimental project. This could be a game, an interactive art piece, a creative tool, or any project where you pushed creative boundaries. Talk about the creative process and technical implementation.",
+    "image": "https://placehold.co/800x600/06b6d4/ffffff?text=Saturn+Creative",
+    "projects": [
+      {
+        "name": "Interactive 3D Experience",
+        "description": "WebGL-based interactive art installation",
+        "tech": "Three.js, GLSL, WebAudio API, React",
+        "link": "https://github.com/yourusername/3d-experience"
+      },
+      {
+        "name": "Generative Art Tool",
+        "description": "Algorithm-based art generation platform",
+        "tech": "Canvas API, P5.js, React, Firebase",
+        "link": "https://github.com/yourusername/generative-art"
+      }
+    ],
+    "links": [
+      { "label": "Live Demo", "url": "https://creative-demo.com" },
+      { "label": "Gallery", "url": "https://gallery.com" }
+    ]
+  },
+
+  "__TIPS__": {
+    "_comment": "Tips for customizing your project_map.json",
+    "tips": [
+      "Keep 'short' descriptions under 2 sentences for readability",
+      "Make 'long' descriptions 2-4 paragraphs with specific achievements",
+      "Use high-quality images (at least 800x600px)",
+      "Include metrics where possible (e.g., '50% faster', '10k users')",
+      "Add working links - broken links look unprofessional",
+      "Use consistent formatting across all entries",
+      "Be honest - showcase real projects you're proud of",
+      "Update regularly as you complete new projects"
+    ],
+    "validation": "You can validate your JSON at: https://jsonlint.com",
+    "image_tips": [
+      "Use actual project screenshots (not placeholders)",
+      "Recommended size: 800x600 or 1200x800 (16:9 or 4:3 ratio)",
+      "Host images on: Imgur, Cloudinary, or your own hosting",
+      "Use HTTPS URLs for security",
+      "Optimize images for web (compress to <500KB)"
+    ]
+  }
+}

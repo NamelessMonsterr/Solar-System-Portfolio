@@ -1,139 +1,619 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Interactive 3D Solar System Portfolio</title>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Interactive 3D Solar System Portfolio</title>
+    <meta
+      name="description"
+      content="Explore an interactive 3D solar system portfolio. Fly through space and discover projects, skills, and contact information."
+    />
+    <meta name="keywords" content="portfolio, 3D, Three.js, interactive, web development, projects, WebGL" />
+    <meta name="author" content="Your Name" />
+    <meta name="theme-color" content="#06b6d4" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Interactive 3D Solar System Portfolio" />
+    <meta property="og:description" content="Explore my portfolio in an immersive 3D space experience" />
+    <meta property="og:image" content="https://yourwebsite.com/preview.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
 
-  <!-- Three.js + examples (GLTFLoader, DRACOLoader, OrbitControls) -->
-  <!-- Using ES modules approach for Three.js r155+ -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/"
+    <!-- Three.js + examples (GLTFLoader, DRACOLoader, OrbitControls) -->
+    <!-- Using ES modules approach for Three.js r155+ -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/"
+        }
       }
-    }
-  </script>
-  <script type="module">
-    // Load Three.js and examples as ES modules
-    try {
-      console.log('[Three.js] Loading ES modules...');
-      const THREE = await import('three');
-      const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
-      const { DRACOLoader } = await import('three/addons/loaders/DRACOLoader.js');
-      const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
-      
-      // Make them globally available for main.js
-      // THREE from ES modules is frozen, so we need to create a wrapper
-      window.THREE = Object.assign({}, THREE);
-      window.THREE.GLTFLoader = GLTFLoader;
-      window.THREE.DRACOLoader = DRACOLoader;
-      window.THREE.OrbitControls = OrbitControls;
-      
-      console.log('[Three.js] ✓ All ES modules loaded successfully');
-      console.log('[Three.js] ✓ THREE.WebGLRenderer:', !!THREE.WebGLRenderer);
-      console.log('[Three.js] ✓ THREE.GLTFLoader:', !!GLTFLoader);
-      
-      // Signal ready
-      window.THREE_READY = true;
-      window.dispatchEvent(new Event('threejs-ready'));
-    } catch(err) {
-      console.error('[Three.js] ✗ Error loading ES modules:', err);
-      window.THREE_LOAD_ERROR = err;
-      const loadingText = document.getElementById('loading-text');
-      if (loadingText) {
-        loadingText.textContent = 'Error: ' + err.message;
-        loadingText.style.color = '#fca5a5';
+    </script>
+    <script type="module">
+      // Load Three.js and examples as ES modules
+      try {
+        console.log("[Three.js] Loading ES modules...");
+        const THREE = await import("three");
+        const { GLTFLoader } = await import(
+          "three/addons/loaders/GLTFLoader.js"
+        );
+        const { DRACOLoader } = await import(
+          "three/addons/loaders/DRACOLoader.js"
+        );
+        const { OrbitControls } = await import(
+          "three/addons/controls/OrbitControls.js"
+        );
+        const { EffectComposer } = await import(
+          "three/addons/postprocessing/EffectComposer.js"
+        );
+        const { RenderPass } = await import(
+          "three/addons/postprocessing/RenderPass.js"
+        );
+        const { UnrealBloomPass } = await import(
+          "three/addons/postprocessing/UnrealBloomPass.js"
+        );
+
+        // Make them globally available for main.js
+        // THREE from ES modules is frozen, so we need to create a wrapper
+        window.THREE = Object.assign({}, THREE);
+        window.THREE.GLTFLoader = GLTFLoader;
+        window.THREE.DRACOLoader = DRACOLoader;
+        window.THREE.OrbitControls = OrbitControls;
+        window.THREE.EffectComposer = EffectComposer;
+        window.THREE.RenderPass = RenderPass;
+        window.THREE.UnrealBloomPass = UnrealBloomPass;
+
+        console.log("[Three.js] ✓ All ES modules loaded successfully");
+        console.log("[Three.js] ✓ THREE.WebGLRenderer:", !!THREE.WebGLRenderer);
+        console.log("[Three.js] ✓ THREE.GLTFLoader:", !!GLTFLoader);
+
+        // Signal ready
+        window.THREE_READY = true;
+        window.dispatchEvent(new Event("threejs-ready"));
+      } catch (err) {
+        console.error("[Three.js] ✗ Error loading ES modules:", err);
+        window.THREE_LOAD_ERROR = err;
+        const loadingText = document.getElementById("loading-text");
+        if (loadingText) {
+          loadingText.textContent = "Error: " + err.message;
+          loadingText.style.color = "#fca5a5";
+        }
       }
-    }
-  </script>
+    </script>
 
-  <style>
-    html,body { margin:0; height:100%; background:#05060a; overflow:hidden; font-family:Inter,Roboto,Arial,sans-serif; }
-    canvas { display:block; }
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #05060a;
+        overflow: hidden;
+        font-family: Inter, Roboto, Arial, sans-serif;
+      }
+      canvas {
+        display: block;
+      }
 
-    /* Loading */
-    #loading-overlay {
-      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-      flex-direction:column; gap:8px; background:rgba(4,6,10,0.9); color:#fff; z-index:2000;
-    }
-    #loading-overlay .bar { width:360px; height:10px; background:rgba(255,255,255,0.08); border-radius:999px; overflow:hidden; }
-    #loading-overlay .fill { height:100%; width:0%; background:linear-gradient(90deg,#6ee7b7,#60a5fa); transition:width 220ms ease; border-radius:999px; }
-    .loading-title { font-size:18px; font-weight:600; }
-    .loading-subtitle { opacity:0.9; font-size:13px; }
+      /* Loading */
+      #loading-overlay {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 8px;
+        background: rgba(4, 6, 10, 0.9);
+        color: #fff;
+        z-index: 2000;
+      }
+      #loading-overlay .bar {
+        width: 360px;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      #loading-overlay .fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #6ee7b7, #60a5fa);
+        transition: width 220ms ease;
+        border-radius: 999px;
+      }
+      .loading-title {
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .loading-subtitle {
+        opacity: 0.9;
+        font-size: 13px;
+      }
 
-    /* Panel & Editor base */
-    #planet-panel { position:absolute; right:20px; top:20px; max-width:420px; min-width:260px; padding:12px; background:rgba(10,10,14,0.92); color:#fff; border-radius:8px; z-index:1000; display:none;}
-    #project-open-editor { position:fixed; left:18px; bottom:18px; z-index:2500; padding:10px 14px; background:#06b6d4; color:#001; border-radius:10px; border:none; font-weight:600; cursor:pointer; }
-    /* small responsive */
-    @media (max-width:720px){
-      #loading-overlay .bar{ width:220px; } #planet-panel{ right:8px; left:8px; top:12px; }
-    }
+      /* Panel & Editor base */
+      #planet-panel {
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        max-width: 420px;
+        min-width: 260px;
+        padding: 12px;
+        background: rgba(10, 10, 14, 0.92);
+        color: #fff;
+        border-radius: 8px;
+        z-index: 1000;
+        display: none;
+      }
 
-    /* Project editor */
-    #project-editor { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:3000; align-items:center; justify-content:center; padding:20px; }
-    .project-editor__modal { background:#071018; padding:18px; border-radius:10px; max-width:980px; width:100%; color:#fff; }
-    .project-editor__header { display:flex; justify-content:space-between; align-items:center; }
-    .project-editor__title { margin:0; }
-    .project-editor__actions { display:flex; align-items:center; gap:8px; }
-    .project-editor__body { margin-top:12px; display:flex; gap:12px; }
-    .project-editor__textarea { flex:1; height:420px; background:#0b1720; color:#dbeafe; padding:12px; border-radius:6px; border:1px solid rgba(255,255,255,0.04); font-family:monospace; font-size:13px; }
-    .project-editor__sidebar { width:280px; }
-    .project-editor__sidebar-label { margin-bottom:8px; }
-    #project-preview { background:#051018; padding:10px; border-radius:6px; height:360px; overflow:auto; color:#cbd5e1; font-size:13px; }
-    .project-editor__sidebar-actions { margin-top:8px; }
-    .project-editor__apply { width:100%; padding:8px; }
-    .project-editor__upload-input { display:none; }
-  </style>
-</head>
-<body>
-  <canvas id="glCanvas"></canvas>
+      /* Full-screen planet overlay */
+      #planet-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: none;
+        background: rgba(5, 6, 10, 0.95);
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+      }
+      #planet-overlay.active {
+        display: flex;
+        flex-direction: column;
+      }
+      #planet-overlay-bg {
+        position: absolute;
+        inset: 0;
+        opacity: 0.4;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        filter: blur(15px) brightness(0.7);
+        animation: planetPulse 5s ease-in-out infinite;
+      }
+      @keyframes planetPulse {
+        0%,
+        100% {
+          opacity: 0.4;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(1.01);
+        }
+      }
+      #planet-overlay-content {
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 40px;
+        max-width: 900px;
+        margin: 0 auto;
+        width: 100%;
+        overflow-y: auto;
+      }
+      #planet-overlay-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: #fff;
+        font-size: 24px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+      #planet-overlay-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
 
-  <div id="loading-overlay" role="status" aria-live="polite">
-    <div class="loading-title">Loading Solar System…</div>
-    <div id="loading-text" class="loading-subtitle">Fetching assets</div>
-    <div class="bar"><div id="loading-fill" class="fill"></div></div>
-  </div>
+      #project-open-editor {
+        position: fixed;
+        left: 18px;
+        bottom: 18px;
+        z-index: 2500;
+        padding: 10px 14px;
+        background: #06b6d4;
+        color: #001;
+        border-radius: 10px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+      }
 
-  <!-- Planet panel (populated by main.js) -->
-  <div id="planet-panel"></div>
-  
-  <!-- Control hint -->
-  <div id="control-hint" style="position:fixed;bottom:80px;left:20px;background:rgba(0,0,0,0.8);color:#fff;padding:12px 16px;border-radius:8px;font-size:13px;z-index:1500;opacity:0;transition:opacity 0.3s;pointer-events:none;max-width:300px;">
-    Press M for manual control
-  </div>
-  
-  <!-- Proximity indicator -->
-  <div id="proximity-indicator" style="position:fixed;top:20px;left:20px;z-index:1500;display:none;max-width:280px;"></div>
+      /* Control hint styles */
+      #control-hint {
+        position: fixed;
+        bottom: 80px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.85);
+        color: #fff;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 12px;
+        z-index: 1500;
+        opacity: 1;
+        transition: opacity 0.3s;
+        pointer-events: none;
+        max-width: 280px;
+        border: 1px solid rgba(6, 182, 212, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      }
+      .control-hint-title {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #06b6d4;
+        font-size: 13px;
+      }
+      .control-hint-content {
+        font-size: 11px;
+        line-height: 1.8;
+        color: #ddd;
+      }
 
-  <!-- Project editor modal -->
-  <div id="project-editor">
-    <div class="project-editor__modal">
-      <div class="project-editor__header">
-        <h3 class="project-editor__title">Project Map Editor</h3>
-        <div class="project-editor__actions">
-          <button id="project-download">Download JSON</button>
-          <button id="project-upload-btn">Upload JSON</button>
-          <input id="project-upload" type="file" accept=".json" class="project-editor__upload-input">
-          <button id="project-close-editor">Close</button>
-        </div>
+      /* Control status styles */
+      #control-status {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        z-index: 1500;
+        border: 1px solid rgba(0, 255, 0, 0.3);
+      }
+      #control-mode-text {
+        color: #00ff00;
+        font-weight: 600;
+      }
+
+      /* Proximity indicator styles */
+      #proximity-indicator {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1500;
+        display: none;
+        max-width: 280px;
+      }
+
+      /* Spaceship Selector */
+      #spaceship-selector {
+        position: fixed;
+        top: 0;
+        right: 0;
+        margin: 0;
+        border-radius: 0 0 0 12px;
+        border-top: none;
+        border-right: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: rgba(10, 10, 14, 0.8);
+        padding: 16px 20px 16px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 1400;
+        backdrop-filter: blur(4px);
+      }
+      .spaceship-btn {
+        width: 100%;
+        padding: 8px 16px;
+        height: auto;
+        min-width: 120px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #aaa;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .spaceship-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+        transform: translateX(-2px);
+      }
+      .spaceship-btn.active {
+        background: rgba(6, 182, 212, 0.2);
+        color: #06b6d4;
+        border-color: #06b6d4;
+        box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+      }
+
+      /* small responsive */
+      @media (max-width: 720px) {
+        #loading-overlay .bar {
+          width: 220px;
+        }
+        #spaceship-selector {
+          top: auto;
+          bottom: 80px;
+          right: 20px;
+          flex-direction: column;
+        }
+        #planet-panel {
+          right: 8px;
+          left: 8px;
+          top: 12px;
+        }
+        #planet-overlay-content {
+          padding: 20px;
+        }
+        #planet-overlay-content h1 {
+          font-size: 32px !important;
+        }
+        #planet-overlay-content h2 {
+          font-size: 20px !important;
+        }
+        #planet-overlay-content > div {
+          padding: 20px !important;
+        }
+        #control-hint {
+          bottom: 120px;
+          left: 8px;
+          right: 8px;
+          max-width: none;
+          font-size: 11px;
+        }
+        #control-status {
+          bottom: 8px;
+          left: 8px;
+          font-size: 11px;
+          padding: 8px 12px;
+        }
+      }
+
+      /* Project editor */
+      #project-editor {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 3000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .project-editor__modal {
+        background: #071018;
+        padding: 18px;
+        border-radius: 10px;
+        max-width: 980px;
+        width: 100%;
+        color: #fff;
+      }
+      .project-editor__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .project-editor__title {
+        margin: 0;
+      }
+      .project-editor__actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .project-editor__body {
+        margin-top: 12px;
+        display: flex;
+        gap: 12px;
+      }
+      .project-editor__textarea {
+        flex: 1;
+        height: 420px;
+        background: #0b1720;
+        color: #dbeafe;
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        font-family: monospace;
+        font-size: 13px;
+      }
+      .project-editor__sidebar {
+        width: 280px;
+      }
+      .project-editor__sidebar-label {
+        margin-bottom: 8px;
+      }
+      #project-preview {
+        background: #051018;
+        padding: 10px;
+        border-radius: 6px;
+        height: 360px;
+        overflow: auto;
+        color: #cbd5e1;
+        font-size: 13px;
+      }
+      .project-editor__sidebar-actions {
+        margin-top: 8px;
+      }
+      .project-editor__apply {
+        width: 100%;
+        padding: 8px;
+      }
+      .project-editor__upload-input {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="glCanvas" role="img" aria-label="Interactive 3D solar system portfolio scene"></canvas>
+
+    <div id="loading-overlay" role="status" aria-live="polite" aria-label="Loading progress">
+      <div class="loading-title" aria-hidden="false">Loading Solar System…</div>
+      <div id="loading-text" class="loading-subtitle" aria-live="polite">Fetching assets</div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="loading-fill" class="fill"></div>
       </div>
-      <div class="project-editor__body">
-        <textarea id="project-json" class="project-editor__textarea"></textarea>
-        <div class="project-editor__sidebar">
-          <div class="project-editor__sidebar-label">Preview</div>
-          <div id="project-preview"></div>
-          <div class="project-editor__sidebar-actions">
-            <button id="project-apply" class="project-editor__apply">Apply to page</button>
+    </div>
+
+    <!-- Planet panel (populated by main.js) -->
+    <div id="planet-panel" role="dialog" aria-labelledby="planet-title" aria-modal="false"></div>
+
+    <!-- Full-screen planet overlay -->
+    <div id="planet-overlay" role="dialog" aria-labelledby="planet-overlay-title" aria-modal="true" aria-hidden="true">
+      <div id="planet-overlay-bg" aria-hidden="true"></div>
+      <button id="planet-overlay-close" aria-label="Close planet information overlay" tabindex="0">✕</button>
+      <div id="planet-overlay-content" role="document">
+        <!-- Content will be populated by main.js -->
+      </div>
+    </div>
+
+    <!-- Control hint - simplified -->
+    <div id="control-hint" role="complementary" aria-label="Spaceship control instructions">
+      <div class="control-hint-title" aria-level="2" role="heading">Simple Controls:</div>
+      <div class="control-hint-content" role="list">
+        <div role="listitem"><strong>WASD</strong> - Move</div>
+        <div role="listitem"><strong>Q / E</strong> - Rotate Left/Right</div>
+        <div role="listitem"><strong>R / F</strong> - Pitch Up/Down (Nose)</div>
+        <div role="listitem"><strong>Drag Mouse</strong> - Look Around</div>
+        <div role="listitem"><strong>Space</strong> - Up / Interact (when near planet)</div>
+        <div role="listitem"><strong>Shift</strong> - Down</div>
+        <div role="listitem"><strong>Click Planet</strong> - View Info</div>
+      </div>
+    </div>
+
+    <!-- Spaceship control status - simplified -->
+    <div id="control-status" role="status" aria-live="polite" aria-label="Current control mode">
+      <span id="control-mode-text" aria-live="polite">Game Mode</span> - Fly to planets and click
+      to explore
+    </div>
+
+    <!-- Proximity indicator -->
+    <div id="proximity-indicator" role="status" aria-live="polite" aria-label="Planet proximity indicator"></div>
+
+    <!-- Spaceship Selector -->
+    <div id="spaceship-selector" role="group" aria-label="Spaceship selection">
+      <button class="spaceship-btn active" data-index="0" role="radio" aria-checked="true" aria-label="Select Cruiser spaceship" tabindex="0">Cruiser</button>
+      <button class="spaceship-btn" data-index="1" role="radio" aria-checked="false" aria-label="Select Fighter spaceship" tabindex="0">Fighter</button>
+      <button class="spaceship-btn" data-index="2" role="radio" aria-checked="false" aria-label="Select Explorer spaceship" tabindex="0">Explorer</button>
+      <button class="spaceship-btn" data-index="3" role="radio" aria-checked="false" aria-label="Select Sparrow spaceship" tabindex="0">Sparrow</button>
+    </div>
+
+    <!-- Project editor modal -->
+    <div id="project-editor" role="dialog" aria-labelledby="project-editor-title" aria-modal="true" aria-hidden="true">
+      <div class="project-editor__modal">
+        <div class="project-editor__header">
+          <h3 id="project-editor-title" class="project-editor__title">Project Map Editor</h3>
+          <div class="project-editor__actions" role="toolbar" aria-label="Editor actions">
+            <button id="project-download" aria-label="Download project data as JSON file" tabindex="0">Download JSON</button>
+            <button id="project-upload-btn" aria-label="Upload project data from JSON file" tabindex="0">Upload JSON</button>
+            <input
+              id="project-upload"
+              type="file"
+              accept=".json"
+              class="project-editor__upload-input"
+              aria-label="Select JSON file to upload"
+            />
+            <button id="project-close-editor" aria-label="Close project editor" tabindex="0">Close</button>
+          </div>
+        </div>
+        <div class="project-editor__body">
+          <textarea
+            id="project-json"
+            class="project-editor__textarea"
+            aria-label="Project data JSON editor"
+            spellcheck="false"
+          ></textarea>
+          <div class="project-editor__sidebar">
+            <div class="project-editor__sidebar-label" role="heading" aria-level="4">Preview</div>
+            <div id="project-preview" role="region" aria-live="polite" aria-label="Project data preview"></div>
+            <div class="project-editor__sidebar-actions">
+              <button id="project-apply" class="project-editor__apply" aria-label="Apply changes to page" tabindex="0">
+                Apply to page
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <button id="project-open-editor">Edit Projects</button>
+    <button id="project-open-editor" aria-label="Open project content editor" tabindex="0">Edit Projects</button>
+    <button id="start-tour-btn" aria-label="Start automated tour of all planets" tabindex="0">Start Tour</button>
+    <button id="cinematic-intro-btn" aria-label="Play cinematic introduction" tabindex="0">Play Intro</button>
 
-  <script src="main.js"></script>
-</body>
+    <style>
+      #start-tour-btn {
+        position: fixed;
+        left: 140px; /* Next to Edit Projects */
+        bottom: 18px;
+        z-index: 2500;
+        padding: 10px 14px;
+        background: #8b5cf6; /* Violet */
+        color: #fff;
+        border-radius: 10px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      #start-tour-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+      }
+      #cinematic-intro-btn {
+        position: fixed;
+        left: 250px; /* Next to Start Tour */
+        bottom: 18px;
+        z-index: 2500;
+        padding: 10px 14px;
+        background: #f59e0b; /* Orange */
+        color: #fff;
+        border-radius: 10px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      #cinematic-intro-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+      }
+      #planet-next-btn {
+        display: none; /* Hidden by default */
+        margin-top: 16px;
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(90deg, #8b5cf6, #6366f1);
+        border: none;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        transition: transform 0.2s;
+      }
+      #planet-next-btn:hover {
+        transform: scale(1.02);
+      }
+    </style>
+
+    <script src="js/main.js?v=5"></script>
+  </body>
 </html>
