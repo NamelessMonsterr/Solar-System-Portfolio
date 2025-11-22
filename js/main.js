@@ -260,15 +260,10 @@ function init() {
     alpha: false,
     powerPreference: "high-performance",
   });
-  // PERFORMANCE FIX: Cap pixel ratio to 1.5 to prevent lag on high-DPI screens (4K/Retina)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-  
-  // PERFORMANCE FIX: Disable shadows to prevent "GPU stall due to ReadPixels"
-  // Shadows are expensive and often cause synchronization issues in WebGL
-  renderer.shadowMap.enabled = false; 
-  // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.shadowMap.enabled = false; // Disable shadows for better performance
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
 
@@ -302,7 +297,11 @@ function init() {
   // Main directional light (sun)
   const dir = new THREE.DirectionalLight(0xffffff, 1.2);
   dir.position.set(50, 100, 50);
-  dir.castShadow = false;
+  dir.castShadow = true;
+  dir.shadow.mapSize.width = 2048;
+  dir.shadow.mapSize.height = 2048;
+  dir.shadow.camera.near = 0.5;
+  dir.shadow.camera.far = 500;
   scene.add(dir);
 
   // Additional fill light
@@ -341,9 +340,8 @@ function init() {
   setupPostProcessing();
 
   // Setup Environment (Stars & Dust)
-  // PERFORMANCE FIX: Reduced particle counts
-  createStarfield(1000); // Further reduced for performance
-  createSpaceDust(200); // Further reduced for performance
+  createStarfield(3000); 
+  createSpaceDust(800); 
 
   // Initialize control status (will be updated when spaceship loads)
   // Start in manual control mode for game experience
@@ -503,40 +501,71 @@ function loadSpaceship(index) {
     console.log(`Switching to spaceship ${index + 1}...`);
   }
 
-// PERFORMANCE FIX: Use lightweight procedural spaceship instead of heavy GLTF model
-const geometry = new THREE.ConeGeometry(0.5, 2, 8);
-geometry.rotateX(Math.PI / 2); // Point forward
-const material = new THREE.MeshStandardMaterial({
-  color: 0x00ffff,
-  emissive: 0x0044aa,
-  roughness: 0.4,
-  metalness: 0.8,
-});
-spaceship = new THREE.Mesh(geometry, material);
+  const loader = new THREE.GLTFLoader();
+  // Optional: Draco
+  if (typeof THREE.DRACOLoader !== "undefined") {
+    const draco = new THREE.DRACOLoader();
+    draco.setDecoderPath(
+      "https://www.gstatic.com/draco/versioned/decoders/1.5.6/"
+    );
+    loader.setDRACOLoader(draco);
+  }
 
-// Engine glow
-const engineGeom = new THREE.ConeGeometry(0.2, 0.5, 8);
-engineGeom.rotateX(-Math.PI / 2);
-const engineMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
-const engine = new THREE.Mesh(engineGeom, engineMat);
-engine.position.z = 1;
-spaceship.add(engine);
+  const modelPath = MODELS_PATH + SPACESHIP_MODELS[index];
+  console.log(`Loading spaceship from: ${modelPath}`);
 
-spaceship.position.set(0, 0, 50);
-scene.add(spaceship);
+  loader.load(
+    modelPath,
+    (gltf) => {
+      // Remove old spaceship if exists
+      if (spaceship) {
+        scene.remove(spaceship);
+        // Clean up memory if possible
+        if (spaceship.geometry) spaceship.geometry.dispose();
+        if (spaceship.material) {
+          if (Array.isArray(spaceship.material)) {
+            spaceship.material.forEach((m) => m.dispose());
+          } else {
+            spaceship.material.dispose();
+          }
+        }
+      }
 
-// Add point light to spaceship
-const shipLight = new THREE.PointLight(0x00ffff, 1, 20);
-shipLight.position.set(0, 1, 0);
-spaceship.add(shipLight);
+      spaceship = gltf.scene;
+      spaceship.scale.set(0.5, 0.5, 0.5); // Adjust scale as needed
+      spaceship.rotation.y = Math.PI; // Face forward
+      
+      // Enable shadows
+      spaceship.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          
+          // Enhance materials
+          if (child.material) {
+            child.material.envMapIntensity = 1.0;
+            child.material.needsUpdate = true;
+          }
+        }
+      });
 
-// Update UI and status
-updateSpaceshipUI(index);
-currentSpaceshipIndex = index;
-console.log(`Procedural spaceship created for index ${index}`);
-if (!hasInitialized) {
+      // Add engine glow/light
+      const engineLight = new THREE.PointLight(0x00ffff, 1, 10);
+      engineLight.position.set(0, 1, -2);
+      spaceship.add(engineLight);
+
+      // Initial position
+      spaceship.position.set(0, 0, 50);
+      scene.add(spaceship);
+
+      // Update UI and status
+      updateSpaceshipUI(index);
+      currentSpaceshipIndex = index;
+      console.log(`Spaceship ${index} loaded successfully`);
+
+      if (!hasInitialized) {
         // Position camera behind spaceship
-        const behind = new THREE.Vector3(0, 2, -8).applyQuaternion(
+        const behind = new THREE.Vector3(0, 5, -15).applyQuaternion(
           spaceship.quaternion
         );
         const cameraPos = new THREE.Vector3()
@@ -562,6 +591,80 @@ if (!hasInitialized) {
         }
         particleSystem.geometry.attributes.position.needsUpdate = true;
       }
+    },
+    (xhr) => {
+      // Progress
+      // console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },
+    (error) => {
+      console.error("An error happened loading the spaceship:", error);
+      // Fallback to procedural if GLB fails
+      console.log("Falling back to procedural spaceship...");
+      createProceduralSpaceship(index);
+    }
+  );
+}
+
+function createProceduralSpaceship(index) {
+  // PERFORMANCE FIX: Use lightweight procedural spaceship instead of heavy GLTF model
+  const geometry = new THREE.ConeGeometry(0.5, 2, 8);
+  geometry.rotateX(Math.PI / 2); // Point forward
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x00ffff,
+    emissive: 0x0044aa,
+    roughness: 0.4,
+    metalness: 0.8,
+  });
+  spaceship = new THREE.Mesh(geometry, material);
+
+  // Engine glow
+  const engineGeom = new THREE.ConeGeometry(0.2, 0.5, 8);
+  engineGeom.rotateX(-Math.PI / 2);
+  const engineMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+  const engine = new THREE.Mesh(engineGeom, engineMat);
+  engine.position.z = 1;
+  spaceship.add(engine);
+
+  spaceship.position.set(0, 0, 50);
+  scene.add(spaceship);
+
+  // Add point light to spaceship
+  const shipLight = new THREE.PointLight(0x00ffff, 1, 20);
+  shipLight.position.set(0, 1, 0);
+  spaceship.add(shipLight);
+
+  // Update UI and status
+  updateSpaceshipUI(index);
+  currentSpaceshipIndex = index;
+  console.log(`Procedural spaceship created for index ${index}`);
+  if (!hasInitialized) {
+          // Position camera behind spaceship
+          const behind = new THREE.Vector3(0, 2, -8).applyQuaternion(
+            spaceship.quaternion
+          );
+          const cameraPos = new THREE.Vector3()
+            .copy(spaceship.position)
+            .add(behind);
+          camera.position.copy(cameraPos);
+          camera.lookAt(spaceship.position);
+  
+          isManualControl = true;
+          if (controls) controls.enabled = false;
+          updateControlStatus("Manual Control Mode");
+  
+          setupVFX();
+        }
+  
+        // Re-initialize VFX particles at new ship position if needed
+        if (particleSystem) {
+          const positions = particleSystem.geometry.attributes.position.array;
+          for (let i = 0; i < positions.length; i += 3) {
+            positions[i] = spaceship.position.x;
+            positions[i + 1] = spaceship.position.y;
+            positions[i + 2] = spaceship.position.z;
+          }
+          particleSystem.geometry.attributes.position.needsUpdate = true;
+        }
 }
 
 /* ======= Helpers ======= */
