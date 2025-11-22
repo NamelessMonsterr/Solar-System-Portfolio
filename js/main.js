@@ -1413,12 +1413,9 @@ function animate() {
     // Update dust and stars
     updateEnvironment(dt);
 
-    // Render with composer if available, else fallback
-    if (composer) {
-      composer.render();
-    } else {
-      renderer.render(scene, camera);
-    }
+    // Render with composer    // PERFORMANCE FIX: Disable Bloom/Post-processing to prevent Software WebGL fallback
+    // composer.render();
+    renderer.render(scene, camera);
   } catch (err) {
     console.error("[animate] Error in render loop:", err);
     // Stop animation on error to prevent infinite crash loop
