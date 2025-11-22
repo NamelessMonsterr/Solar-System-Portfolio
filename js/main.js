@@ -11,6 +11,15 @@ const SPACESHIP_MODELS = [
   "spaceships/spaceship.glb",
   "spaceships/star_sparrow_modular_spaceship.glb",
 ];
+const PLANET_DATA = [
+  { name: "Sun", distance: 0, size: 2, color: 0xffff00, emissive: 0x444400 },
+  { name: "Mercury", distance: 10, size: 0.5, color: 0x888888 },
+  { name: "Venus", distance: 15, size: 0.7, color: 0xffff88 },
+  { name: "Earth", distance: 20, size: 0.8, color: 0x4444ff },
+  { name: "Mars", distance: 25, size: 0.6, color: 0xff4444 },
+  { name: "Jupiter", distance: 40, size: 1.5, color: 0xffaa44 },
+  { name: "Saturn", distance: 50, size: 1.3, color: 0xffdd88 },
+];
 let currentSpaceshipIndex = 0;
 let flightSpeed = 0.1; // Increased for better tour pacing
 let arriveThreshold = 0.1; // Balanced for reliable arrival
@@ -167,6 +176,67 @@ waitForThreeJS()
     }
   });
 
+function createProceduralSolarSystem() {
+  const system = new THREE.Group();
+
+  PLANET_DATA.forEach(data => {
+    const geom = new THREE.SphereGeometry(data.size, 8, 8);
+    const mat = new THREE.MeshStandardMaterial({
+      color: data.color,
+      roughness: 0.7,
+      metalness: 0.1,
+      emissive: data.emissive || 0x000000,
+    });
+    const mesh = new THREE.Mesh(geom, mat);
+    if (data.distance > 0) {
+      mesh.position.x = data.distance;
+    }
+    mesh.name = data.name;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    system.add(mesh);
+  });
+
+  scene.add(system);
+
+  // Traverse and add to PLANETS
+  system.traverse((child) => {
+    if (child.isMesh) {
+      const bbox = new THREE.Box3().setFromObject(child);
+      if (bbox.isEmpty()) return;
+      const name = child.name;
+      const worldPos = new THREE.Vector3();
+      child.getWorldPosition(worldPos);
+
+      const entry = {
+        name,
+        mesh: child,
+        worldPosition: worldPos.clone(),
+        bbox,
+        info: {
+          title: prettify(name),
+          description: `Project section for ${prettify(name)}.`,
+        },
+      };
+      PLANETS.push(entry);
+    }
+  });
+
+  // Adjust camera
+  const box = new THREE.Box3().setFromObject(system);
+  const center = box.getCenter(new THREE.Vector3());
+  system.position.sub(center);
+
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  if (maxDim > 0 && !spaceship) {
+    const distance = maxDim * 1.2;
+    camera.position.set(0, distance * 0.4, distance);
+    camera.lookAt(0, 0, 0);
+    if (controls && controls.update) controls.update();
+  }
+}
+
 /* ======= Initialization ======= */
 function init() {
   if (hasInitialized) return;
@@ -272,8 +342,8 @@ function init() {
 
   // Setup Environment (Stars & Dust)
   // PERFORMANCE FIX: Reduced particle counts
-  createStarfield(3000); // Reduced from default
-  createSpaceDust(1000); // Reduced from default
+  createStarfield(1000); // Further reduced for performance
+  createSpaceDust(200); // Further reduced for performance
 
   // Initialize control status (will be updated when spaceship loads)
   // Start in manual control mode for game experience
@@ -393,164 +463,8 @@ function setupLoadersAndLoadModels() {
     console.warn("DRACOLoader not found; loading will proceed without Draco.");
   }
 
-  // Load solar system GLB
-  loader.load(
-    MODELS_PATH + SOLAR_GLTF,
-    (gltf) => {
-      const system = gltf.scene || (gltf.scenes && gltf.scenes[0]);
-      if (!system) {
-        console.error("No scene in solar system glb");
-        return;
-      }
-      // scale down real-scale models - increased scale for visibility
-      const scale = 0.05; // Increased to 5% for better visibility (real solar systems are HUGE)
-      system.scale.setScalar(scale);
-      scene.add(system);
-
-      // Center the solar system at origin for better viewing
-      const box = new THREE.Box3().setFromObject(system);
-      const center = box.getCenter(new THREE.Vector3());
-      system.position.sub(center);
-
-      // Get bounding box size to help with camera positioning
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      console.log(
-        "Solar system loaded, scale:",
-        scale,
-        "center offset:",
-        center,
-        "max dimension:",
-        maxDim
-      );
-
-      // Adjust camera to frame the solar system better
-      // But wait for spaceship to load before final camera adjustment
-      if (maxDim > 0 && !spaceship) {
-        // Initial camera position - will be refined when spaceship loads
-        const distance = maxDim * 1.2;
-        camera.position.set(0, distance * 0.4, distance);
-        camera.lookAt(0, 0, 0);
-        if (controls && controls.update) controls.update();
-      }
-
-      // Map nodes as planets (heuristic: any mesh with a meaningful name)
-      system.traverse((child) => {
-        if (child.isMesh) {
-          // skip tiny helpers
-          const bbox = new THREE.Box3().setFromObject(child);
-          if (bbox.isEmpty()) return;
-          const name =
-            child.name && child.name.trim()
-              ? child.name
-              : `Object_${PLANETS.length}`;
-          const worldPos = new THREE.Vector3();
-          child.getWorldPosition(worldPos);
-
-          // Ensure mesh is visible and has proper material
-          child.visible = true;
-          if (!child.material) {
-            child.material = new THREE.MeshStandardMaterial({
-              color: 0x888888,
-              roughness: 0.7,
-              metalness: 0.1,
-            });
-          } else if (child.material) {
-            // Enhance existing materials
-            if (Array.isArray(child.material)) {
-              child.material.forEach((mat) => {
-                if (mat) {
-                  mat.needsUpdate = true;
-                  if (mat.map) mat.map.needsUpdate = true;
-                }
-              });
-            } else {
-              child.material.needsUpdate = true;
-              if (child.material.map) child.material.map.needsUpdate = true;
-            }
-          }
-
-          // Enable shadows for planets
-          child.castShadow = true;
-          child.receiveShadow = true;
-
-          const entry = {
-            name,
-            mesh: child,
-            worldPosition: worldPos.clone(),
-            bbox,
-            info: {
-              title: prettify(name),
-              description: `Project section for ${prettify(name)}.`,
-            },
-          };
-          PLANETS.push(entry);
-
-          // Create LOD placeholder (small sphere)
-          try {
-            const size = bbox.getSize(new THREE.Vector3());
-            const radius = Math.max(
-              0.5,
-              Math.max(size.x, size.y, size.z) * 0.18
-            );
-            const geom = new THREE.SphereGeometry(radius, 10, 10);
-            const mat = new THREE.MeshBasicMaterial({ color: 0x888888 });
-            const placeholder = new THREE.Mesh(geom, mat);
-            placeholder.position.copy(entry.worldPosition);
-            placeholder.visible = false;
-            scene.add(placeholder);
-            entry._lodPlaceholder = placeholder;
-          } catch (e) {
-            /* ignore */
-          }
-        }
-      });
-
-      console.log(
-        "Mapped PLANETS:",
-        PLANETS.map((p) => p.name)
-      );
-      console.log("Scene children count:", scene.children.length);
-      console.log("Solar system mesh count:", system.children.length);
-
-      // Log first few planet positions for debugging
-      if (PLANETS.length > 0) {
-        const positions = PLANETS.slice(0, 5).map((p) => ({
-          name: p.name,
-          pos: {
-            x: p.worldPosition.x.toFixed(2),
-            y: p.worldPosition.y.toFixed(2),
-            z: p.worldPosition.z.toFixed(2),
-          },
-          distance: p.worldPosition.length().toFixed(2),
-        }));
-        console.log("First 5 planet positions:", positions);
-        console.log("Camera position after auto-adjust:", {
-          x: camera.position.x.toFixed(2),
-          y: camera.position.y.toFixed(2),
-          z: camera.position.z.toFixed(2),
-        });
-      }
-      // build default PROJECT_MAP from nodes (can be overridden by external JSON)
-      window.PROJECT_MAP = window.PROJECT_MAP || {};
-      for (const p of PLANETS) {
-        if (!window.PROJECT_MAP[p.name]) {
-          window.PROJECT_MAP[p.name] = {
-            title: p.info.title,
-            short: p.info.description,
-            long: p.info.description,
-          };
-        }
-      }
-    },
-    undefined,
-    (err) => {
-      console.error("Error loading solar system glb:", err);
-      showFatal(
-        "Failed to load solar system model. Check devtools for details."
-      );
-    }
-  );
+  // Create procedural solar system
+  createProceduralSolarSystem();
 
   // Load spaceship GLB (Initial load)
   loadSpaceship(currentSpaceshipIndex);
@@ -589,80 +503,38 @@ function loadSpaceship(index) {
     console.log(`Switching to spaceship ${index + 1}...`);
   }
 
-  const loader = new THREE.GLTFLoader();
-  // Optional: Draco
-  if (typeof THREE.DRACOLoader !== "undefined") {
-    try {
-      const draco = new THREE.DRACOLoader();
-      draco.setDecoderPath(
-        "https://www.gstatic.com/draco/versioned/decoders/1.5.6/"
-      );
-      loader.setDRACOLoader(draco);
-    } catch (e) {}
-  }
+// PERFORMANCE FIX: Use lightweight procedural spaceship instead of heavy GLTF model
+const geometry = new THREE.ConeGeometry(0.5, 2, 8);
+geometry.rotateX(Math.PI / 2); // Point forward
+const material = new THREE.MeshStandardMaterial({
+  color: 0x00ffff,
+  emissive: 0x0044aa,
+  roughness: 0.4,
+  metalness: 0.8,
+});
+spaceship = new THREE.Mesh(geometry, material);
 
-  const modelPath = MODELS_PATH + SPACESHIP_MODELS[index];
+// Engine glow
+const engineGeom = new THREE.ConeGeometry(0.2, 0.5, 8);
+engineGeom.rotateX(-Math.PI / 2);
+const engineMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+const engine = new THREE.Mesh(engineGeom, engineMat);
+engine.position.z = 1;
+spaceship.add(engine);
 
-  loader.load(
-    modelPath,
-    (gltf) => {
-      const newShip = gltf.scene || (gltf.scenes && gltf.scenes[0]);
-      if (!newShip) {
-        console.error("No scene in spaceship glb");
-        return;
-      }
+spaceship.position.set(0, 0, 50);
+scene.add(spaceship);
 
-      // Store old position/rotation if spaceship exists
-      const oldPos = spaceship
-        ? spaceship.position.clone()
-        : new THREE.Vector3(15, 8, 20);
-      const oldRot = spaceship
-        ? spaceship.rotation.clone()
-        : new THREE.Euler(0, -Math.PI / 4, 0);
+// Add point light to spaceship
+const shipLight = new THREE.PointLight(0x00ffff, 1, 20);
+shipLight.position.set(0, 1, 0);
+spaceship.add(shipLight);
 
-      // Remove old spaceship
-      if (spaceship) {
-        scene.remove(spaceship);
-        // Clean up resources if needed
-      }
-
-      spaceship = newShip;
-      currentSpaceshipIndex = index;
-
-      // Update UI
-      updateSpaceshipUI(index);
-
-      // Apply settings
-      spaceship.scale.setScalar(0.15);
-      spaceship.position.copy(oldPos);
-      spaceship.rotation.copy(oldRot);
-
-      // Enhance materials
-      spaceship.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-          if (child.material) {
-            if (Array.isArray(child.material)) {
-              child.material.forEach((mat) => {
-                if (mat) {
-                  mat.needsUpdate = true;
-                  if (mat.map) mat.map.needsUpdate = true;
-                }
-              });
-            } else {
-              child.material.needsUpdate = true;
-              if (child.material.map) child.material.map.needsUpdate = true;
-            }
-          }
-        }
-      });
-
-      scene.add(spaceship);
-      console.log(`Spaceship loaded: ${SPACESHIP_MODELS[index]}`);
-
-      // If this is the very first load (initialization)
-      if (!hasInitialized) {
+// Update UI and status
+updateSpaceshipUI(index);
+currentSpaceshipIndex = index;
+console.log(`Procedural spaceship created for index ${index}`);
+if (!hasInitialized) {
         // Position camera behind spaceship
         const behind = new THREE.Vector3(0, 2, -8).applyQuaternion(
           spaceship.quaternion
@@ -690,14 +562,6 @@ function loadSpaceship(index) {
         }
         particleSystem.geometry.attributes.position.needsUpdate = true;
       }
-    },
-    (xhr) => {
-      // Progress
-    },
-    (err) => {
-      console.error("Error loading spaceship:", err);
-    }
-  );
 }
 
 /* ======= Helpers ======= */

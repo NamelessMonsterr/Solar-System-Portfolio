@@ -1,48 +1,59 @@
 {
-    "Mercury": {
-      "title": "Mercury — Speedy Starter",
-      "short": "Small but mighty. The closest planet to the Sun.",
-      "long": "Mercury represents your first project — fast, lightweight, and powerful. Replace this text with your own description.",
-      "image": "https://placehold.co/600x400/111111/FFFFFF?text=Mercury",
-      "links": [
-        { "label": "GitHub", "url": "https://github.com/" }
-      ]
-    },
-    "Venus": {
-      "title": "Venus — Design Project",
-      "short": "Elegant and atmospheric. A showcase of your design work.",
-      "long": "Venus symbolizes your creative projects — beautifully designed, user-centered interfaces.",
-      "image": "https://placehold.co/600x400/222222/FFFFFF?text=Venus",
-      "links": [
-        { "label": "Live Demo", "url": "https://example.com" }
-      ]
-    },
-    "Earth": {
-      "title": "Earth — Portfolio Main Hub",
-      "short": "The centerpiece of your journey — your personal brand.",
-      "long": "Earth is your main portfolio section, connecting all your projects, achievements, and contact info.",
-      "image": "https://placehold.co/600x400/333333/FFFFFF?text=Earth",
-      "links": [
-        { "label": "Resume", "url": "#" }
-      ]
-    },
-    "Mars": {
-      "title": "Mars — Tech Project",
-      "short": "Ambitious and bold. Focused on exploration and innovation.",
-      "long": "Mars is your showcase for a bold technical project — maybe your first major experiment or prototype.",
-      "image": "https://placehold.co/600x400/444444/FFFFFF?text=Mars"
-    },
-    "Jupiter": {
-      "title": "Jupiter — Big Project",
-      "short": "Massive in scale, powerful in concept.",
-      "long": "Jupiter represents your largest and most complex project — something you’re truly proud of.",
-      "image": "https://placehold.co/600x400/555555/FFFFFF?text=Jupiter"
-    },
-    "Saturn": {
-      "title": "Saturn — Creative Project",
-      "short": "Beautiful rings and smooth experience.",
-      "long": "Saturn showcases your creativity — maybe a game, animation, or art-tech fusion.",
-      "image": "https://placehold.co/600x400/666666/FFFFFF?text=Saturn"
-    }
+  "Mercury": {
+    "title": "Project 1: The Starter",
+    "short": "A brief description of your first project.",
+    "long": "This is a detailed description of your first project. Explain the technologies used, the challenges you faced, and the solutions you implemented. This is your chance to show off your coding skills.",
+    "image": "https://placehold.co/600x400/111111/FFFFFF?text=Project+1",
+    "links": [
+      { "label": "GitHub", "url": "https://github.com/yourusername/project1" },
+      { "label": "Live Demo", "url": "https://project1.example.com" }
+    ]
+  },
+  "Venus": {
+    "title": "Project 2: Design Focus",
+    "short": "A project that highlights your design skills.",
+    "long": "Describe a project where you focused on UI/UX design. Mention any design systems or frameworks you used. Explain your design process and how you iterated on the user experience.",
+    "image": "https://placehold.co/600x400/222222/FFFFFF?text=Project+2",
+    "links": [
+      { "label": "Case Study", "url": "https://medium.com/@yourusername/case-study" }
+    ]
+  },
+  "Earth": {
+    "title": "About Me",
+    "short": "Your personal portfolio hub.",
+    "long": "This is the main section about you. Write a bio that highlights your experience, skills, and passion for development. Include your contact information here as well.",
+    "image": "https://placehold.co/600x400/333333/FFFFFF?text=About+Me",
+    "links": [
+      { "label": "Resume", "url": "/resume.pdf" },
+      { "label": "LinkedIn", "url": "https://linkedin.com/in/yourusername" },
+      { "label": "Email", "url": "mailto:yourname@example.com" }
+    ]
+  },
+  "Mars": {
+    "title": "Project 3: Technical Deep Dive",
+    "short": "A complex technical challenge you solved.",
+    "long": "Detail a project where you tackled a difficult technical problem. Explain the architecture, the algorithms, or the optimization techniques you used.",
+    "image": "https://placehold.co/600x400/444444/FFFFFF?text=Project+3",
+    "links": [
+      { "label": "GitHub", "url": "https://github.com/yourusername/project3" }
+    ]
+  },
+  "Jupiter": {
+    "title": "Project 4: The Big One",
+    "short": "Your most significant project to date.",
+    "long": "This is your flagship project. Describe its scope, the team you worked with (if any), and the impact it had. This should be the project you are most proud of.",
+    "image": "https://placehold.co/600x400/555555/FFFFFF?text=Project+4",
+    "links": [
+      { "label": "Website", "url": "https://bigproject.com" }
+    ]
+  },
+  "Saturn": {
+    "title": "Project 5: Creative Experiment",
+    "short": "Something fun and experimental.",
+    "long": "Showcase a creative coding experiment, a game, or a side project that shows your personality and willingness to learn new things.",
+    "image": "https://placehold.co/600x400/666666/FFFFFF?text=Project+5",
+    "links": [
+      { "label": "Demo", "url": "https://codepen.io/yourusername/pen/xyz" }
+    ]
   }
-  
+}
