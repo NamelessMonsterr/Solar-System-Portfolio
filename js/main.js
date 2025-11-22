@@ -190,7 +190,13 @@ function init() {
     alpha: false,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Limit pixel ratio for better performance
+  // PERFORMANCE FIX: Cap pixel ratio to 1.5 to prevent lag on high-DPI screens (4K/Retina)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  
+  // PERFORMANCE FIX: Disable shadows to prevent "GPU stall due to ReadPixels"
+  // Shadows are expensive and often cause synchronization issues in WebGL
+  renderer.shadowMap.enabled = false; 
+  // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = false; // Disable shadows for better performance
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -265,8 +271,9 @@ function init() {
   setupPostProcessing();
 
   // Setup Environment (Stars & Dust)
-  createStarfield();
-  createSpaceDust();
+  // PERFORMANCE FIX: Reduced particle counts
+  createStarfield(3000); // Reduced from default
+  createSpaceDust(1000); // Reduced from default
 
   // Initialize control status (will be updated when spaceship loads)
   // Start in manual control mode for game experience
@@ -1814,6 +1821,21 @@ function setupAudio() {
     backgroundMusic = { oscillator, gainNode, audioContext };
 
     console.log("Background music initialized");
+    
+    // Fix for "The AudioContext was not allowed to start"
+    const resumeAudio = () => {
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+          console.log("AudioContext resumed successfully");
+        });
+      }
+      document.removeEventListener('click', resumeAudio);
+      document.removeEventListener('keydown', resumeAudio);
+    };
+    
+    document.addEventListener('click', resumeAudio);
+    document.addEventListener('keydown', resumeAudio);
+    
   } catch (e) {
     console.warn("Audio not available:", e);
   }
@@ -1901,8 +1923,8 @@ function setupPostProcessing() {
 }
 
 /* ======= Environment (Stars & Dust) ======= */
-function createStarfield() {
-  const starCount = 3000;
+function createStarfield(count = 5000) {
+  const starCount = count;
   const geom = new THREE.BufferGeometry();
   const pos = new Float32Array(starCount * 3);
   const cols = new Float32Array(starCount * 3);
@@ -1943,8 +1965,8 @@ function createStarfield() {
   scene.add(starfield);
 }
 
-function createSpaceDust() {
-  const dustCount = 500;
+function createSpaceDust(count = 1000) {
+  const dustCount = count;
   const geom = new THREE.BufferGeometry();
   const pos = new Float32Array(dustCount * 3);
   
